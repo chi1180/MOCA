@@ -21,13 +21,13 @@ export default function Home() {
 
         {/* BOOKING */}
         <section className="flex max-w-7xl gap-8 mx-auto">
-          <div className="w-3/4">
+          <div className="w-2/3">
             <Card title="福富町マップ" icon={<LucideMap />}>
               <div>Card Content</div>
             </Card>
           </div>
 
-          <div className="w-1/4 flex flex-col gap-8">
+          <div className="w-1/3 flex flex-col gap-8">
             <div className="w-full">
               <Card
                 title="予約情報"

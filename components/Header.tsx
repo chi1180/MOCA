@@ -10,8 +10,8 @@ export default function Header() {
           <Image src={"/icon.png"} alt="MOCA Icon" fill />
         </div>
         <div className="flex flex-col">
-          <h1 className="text-2xl font-bold text-(--text-primary)">MOCA</h1>
-          <p className="text-(--text-secondary) text-sm">東広島市福富町</p>
+          <h1 className="text-2xl font-bold text-text-primary">MOCA</h1>
+          <p className="text-text-secondary text-sm">東広島市福富町</p>
         </div>
       </div>
 
