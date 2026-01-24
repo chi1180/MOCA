@@ -1,7 +1,7 @@
-import Card from "@/components/Card";
+import Booking from "@/components/Booking";
 import Header from "@/components/Header";
 import Highlight from "@/components/Highlight";
-import { LucideMap } from "lucide-react";
+
 export default function Home() {
   return (
     <div className="w-full h-full bg-background">
@@ -21,30 +21,7 @@ export default function Home() {
 
         {/* BOOKING */}
         <section className="flex max-w-7xl gap-8 mx-auto">
-          <div className="w-2/3">
-            <Card title="福富町マップ" icon={<LucideMap />}>
-              <div>Card Content</div>
-            </Card>
-          </div>
-
-          <div className="w-1/3 flex flex-col gap-8">
-            <div className="w-full">
-              <Card
-                title="予約情報"
-                description="選択したルートと乗降ポイントの情報"
-              >
-                <div>Card Content</div>
-              </Card>
-            </div>
-            <div className="w-full">
-              <Card
-                title="乗降ポイント一覧"
-                description="選択可能な乗降ポイントのリスト"
-              >
-                <div>Card Content</div>
-              </Card>
-            </div>
-          </div>
+          <Booking />
         </section>
       </main>
 

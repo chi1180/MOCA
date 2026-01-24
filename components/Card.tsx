@@ -7,7 +7,7 @@ export default function Card({
   description,
 }: CardProps) {
   return (
-    <div className="w-full h-full p-4 flex flex-col gap-3 bg-white rounded-lg shadow border border-gray-200">
+    <div className="w-full h-full p-4 flex flex-col gap-4 bg-white rounded-lg shadow border border-gray-200">
       {/* HEADER */}
       <div className="w-full flex flex-col gap-1">
         <div className="flex items-center gap-2">
