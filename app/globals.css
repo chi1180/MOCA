@@ -1,3 +1,14 @@
 @import "tailwindcss";
 
-/* TODO ::: [ ] Implement theme setting, default layout, etc... */
+:root {
+  /* Palette */
+  --color-primary: #fa812f;
+  --color-secondary: #fab12f;
+  --color-accent: #fa4032;
+  --color-background: #fef3e2;
+
+  /* Text color */
+  --text-primary: #1a1a1a;
+  --text-secondary: #4a4a4a;
+  --text-accent: #eaeaea;
+}
