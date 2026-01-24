@@ -15,8 +15,8 @@ export default function Button({
         <div
           className={`px-4 py-2 rounded-md text-center ${
             filled
-              ? "bg-(--color-background) text-(--text-primary)"
-              : "bg-(--color-primary) text-(--text-accent) border-2 border-(--color-background)"
+              ? "bg-background text-text-primary"
+              : "bg-primary text-text-accent border-2 border-background"
           } ${disabled ? "opacity-60 cursor-not-allowed" : "hover:brightness-90 transition-all duration-300"}`}
         >
           {disabled ? <span>{label}</span> : <Link href={href}>{label}</Link>}
@@ -36,8 +36,8 @@ export default function Button({
           disabled={disabled}
           className={`px-4 py-2 rounded-md text-center ${
             filled
-              ? "bg-(--color-background) text-(--text-primary)"
-              : "bg-(--color-primary) text-(--text-accent) border-2 border-(--color-background)"
+              ? "bg-background text-text-primary"
+              : "bg-primary text-text-accent border-2 border-background"
           } ${disabled ? "opacity-60 cursor-not-allowed" : "hover:brightness-90 transition-all duration-300"}`}
         >
           {label}

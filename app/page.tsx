@@ -4,7 +4,7 @@ import Highlight from "@/components/Highlight";
 import { LucideMap } from "lucide-react";
 export default function Home() {
   return (
-    <div className="w-full h-full bg-(--color-background)">
+    <div className="w-full h-full bg-background">
       <Header />
 
       <main className="*:py-12">
@@ -12,9 +12,9 @@ export default function Home() {
         <section className="flex flex-col items-center gap-8">
           <h1 className="text-4xl font-bold">どこへ行きますか？</h1>
           <h2 className="text-2xl">
-            <Highlight color="--color-primary">運行ルート</Highlight>
+            <Highlight color="bg-primary">運行ルート</Highlight>
             を選択し、
-            <Highlight color="--color-secondary">乗降ポイント</Highlight>
+            <Highlight color="bg-secondary">乗降ポイント</Highlight>
             を選んでください
           </h2>
         </section>

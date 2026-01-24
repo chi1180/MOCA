@@ -3,7 +3,7 @@ import Button from "./Button";
 
 export default function Header() {
   return (
-    <header className="w-full h-20 py-4 bg-(--color-primary) flex items-center justify-around sticky top-0 z-50">
+    <header className="w-full h-20 py-4 bg-primary flex items-center justify-around sticky top-0 z-50">
       {/* Icon & title */}
       <div className="h-full flex items-center gap-4">
         <div className="h-full aspect-square relative">
