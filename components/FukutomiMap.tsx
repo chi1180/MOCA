@@ -1,8 +1,9 @@
 "use client";
 
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, GeoJSON } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
+import { MAP_DATA } from "@/data/data";
 
 const iconUrl = "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png";
 const iconRetinaUrl =
@@ -22,8 +23,8 @@ L.Marker.prototype.options.icon = DefaultIcon;
 export default function FukutomiMapInner() {
   return (
     <MapContainer
-      center={[51.505, -0.09]}
-      zoom={13}
+      center={MAP_DATA.center}
+      zoom={MAP_DATA.scale}
       scrollWheelZoom={false}
       style={{ height: "100%", width: "100%" }}
     >
@@ -31,11 +32,13 @@ export default function FukutomiMapInner() {
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
-      <Marker position={[51.505, -0.09]}>
+      <Marker position={MAP_DATA.center}>
         <Popup>
           Hiroshima AI Club <br /> Fukutomi Project.
         </Popup>
       </Marker>
+
+      <GeoJSON data={MAP_DATA.polygon} />
     </MapContainer>
   );
 }
