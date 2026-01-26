@@ -1,9 +1,9 @@
 export interface ButtonProps {
-  label: string;
-  disabled?: boolean;
-  filled?: boolean;
-
   type: "button" | "link";
-  onClick?: () => void;
+  label: string;
   href?: string;
+  filled?: boolean;
+  disabled?: boolean;
+  onClick?: () => void;
+  icon?: React.ReactNode;
 }

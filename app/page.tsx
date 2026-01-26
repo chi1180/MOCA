@@ -7,7 +7,7 @@ export default function Home() {
     <div className="w-full h-full bg-background">
       <Header />
 
-      <main className="*:py-12">
+      <main className="max-w-7xl mx-auto space-y-8 pt-8 pb-16 px-4">
         {/* TOP */}
         <section className="flex flex-col items-center gap-8">
           <h1 className="text-4xl font-bold">どこへ行きますか？</h1>

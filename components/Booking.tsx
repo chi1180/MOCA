@@ -1,8 +1,8 @@
 "use client";
 
-import { LucideMap } from "lucide-react";
-import dynamic from "next/dynamic";
 import Card from "./Card";
+import dynamic from "next/dynamic";
+import { LucideMap } from "lucide-react";
 
 import { useMemo } from "react";
 
