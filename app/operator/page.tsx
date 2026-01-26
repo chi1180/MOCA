@@ -8,6 +8,7 @@ import {
   LucideRoute,
   LucideZap,
   LucideUsers,
+  LucidePlus,
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useMemo, useState } from "react";
@@ -111,9 +112,27 @@ export default function OperatorPage() {
             {/* Card */}
             <div className="w-full">
               <Card
-                title="乗車予約管理"
-                description="ユーザからの乗車予約の確認・管理を行います"
-                icon={<LucideUsers />}
+                title={tab === "points" ? "ポイント一覧" : "ルート一覧"}
+                description="福富町内の条項ポイント管理"
+                operation={
+                  tab === "points" ? (
+                    <Button
+                      label="新規追加"
+                      type="button"
+                      filled={false}
+                      onClick={() => {}}
+                      icon={<LucidePlus />}
+                    />
+                  ) : (
+                    <Button
+                      label="新規ルート"
+                      type="button"
+                      filled={false}
+                      onClick={() => {}}
+                      icon={<LucidePlus />}
+                    />
+                  )
+                }
               >
                 <div>Card Content</div>
               </Card>
