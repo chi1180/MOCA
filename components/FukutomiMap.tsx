@@ -36,6 +36,8 @@ export default function FukutomiMapInner() {
       scrollWheelZoom={false}
       style={{ height: "100%", width: "100%" }}
       minZoom={MAP_DATA.minimum_scale}
+      maxBounds={MAP_DATA.max_bounds}
+      maxBoundsViscosity={1.0}
     >
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
