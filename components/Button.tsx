@@ -11,16 +11,18 @@ export default function Button({
 }: ButtonProps) {
   if (type === "link") {
     if (href) {
-      return (
-        <div
-          className={`px-4 py-2 rounded-md text-center ${
-            filled
-              ? "bg-background text-text-primary"
-              : "bg-primary text-text-accent border-2 border-background"
-          } ${disabled ? "opacity-60 cursor-not-allowed" : "hover:brightness-90 transition-all duration-300"}`}
-        >
-          {disabled ? <span>{label}</span> : <Link href={href}>{label}</Link>}
-        </div>
+      const className = `px-4 py-2 rounded-md border-2 text-center ${
+        filled
+          ? "bg-background text-text-primary border-background"
+          : "bg-primary text-text-accent border-background"
+      } ${disabled ? "opacity-60 cursor-not-allowed" : "hover:brightness-90 transition-all duration-300"}`;
+
+      return disabled ? (
+        <div className={className}>{label}</div>
+      ) : (
+        <Link href={href}>
+          <div className={className}>{label}</div>
+        </Link>
       );
     } else {
       throw new Error(

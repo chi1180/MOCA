@@ -1,8 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import Button from "./Button";
 import { useEffect, useState } from "react";
+import Button from "./Button";
 
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -38,7 +38,7 @@ export default function Header() {
 
       {/* Header buttons */}
       <div className="flex gap-4">
-        <Button label="予約履歴" type="link" href="/bookings" />
+        <Button label="予約履歴" type="link" href="/reservations" />
         <Button label="事業者画面" type="link" href="/operator" filled />
       </div>
     </header>
