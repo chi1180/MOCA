@@ -2,13 +2,14 @@
 
 import Button from "@/components/Button";
 import Card from "@/components/Card";
+import Dialog from "@/components/Dialog";
 import SubpageHeader from "@/components/SubpageHeader";
 import {
   LucideMapPin,
-  LucideRoute,
-  LucideZap,
-  LucideUsers,
   LucidePlus,
+  LucideRoute,
+  LucideUsers,
+  LucideZap,
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useMemo, useState } from "react";
@@ -55,9 +56,11 @@ export default function OperatorPage() {
   );
 
   const [tab, setTab] = useState<"points" | "routes">("points");
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   return (
     <div className="w-full h-full bg-background">
+      <Dialog content={<p>Hello !</p>} isOpen={isDialogOpen} />
       <SubpageHeader type="operator" />
 
       <main className="max-w-7xl mx-auto space-y-8 pt-8 pb-16 px-4">
@@ -110,25 +113,17 @@ export default function OperatorPage() {
             </div>
 
             {/* Card */}
-            <div className="w-full">
+            <div className="w-full h-full">
               <Card
                 title={tab === "points" ? "ポイント一覧" : "ルート一覧"}
                 description="福富町内の条項ポイント管理"
                 operation={
-                  tab === "points" ? (
+                  tab === "points" && (
                     <Button
                       label="新規追加"
                       type="button"
                       filled={false}
-                      onClick={() => {}}
-                      icon={<LucidePlus />}
-                    />
-                  ) : (
-                    <Button
-                      label="新規ルート"
-                      type="button"
-                      filled={false}
-                      onClick={() => {}}
+                      onClick={() => setIsDialogOpen(true)}
                       icon={<LucidePlus />}
                     />
                   )
