@@ -1,9 +1,30 @@
+"use client";
+
 import Image from "next/image";
 import Button from "./Button";
+import { useEffect, useState } from "react";
 
 export default function Header() {
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const handleScroll = () => {
+        const scrollTop = window.scrollY;
+        setIsScrolled(scrollTop > 0);
+      };
+
+      window.addEventListener("scroll", handleScroll);
+      return () => {
+        window.removeEventListener("scroll", handleScroll);
+      };
+    }
+  });
+
   return (
-    <header className="w-full h-20 py-4 bg-primary flex items-center justify-around sticky top-0 z-50">
+    <header
+      className={`w-full h-20 py-4 bg-primary flex items-center justify-around sticky top-0 z-50 ${isScrolled ? "shadow-md" : ""} transition-shadow duration-300`}
+    >
       {/* Icon & title */}
       <div className="h-full flex items-center gap-4">
         <div className="h-full aspect-square relative">
