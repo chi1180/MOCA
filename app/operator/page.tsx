@@ -2,7 +2,6 @@
 
 import Button from "@/components/Button";
 import Card from "@/components/Card";
-import Dialog from "@/components/Dialog";
 import SubpageHeader from "@/components/SubpageHeader";
 import {
   LucideMapPin,
@@ -12,35 +11,54 @@ import {
   LucideZap,
 } from "lucide-react";
 import dynamic from "next/dynamic";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
 export default function OperatorPage() {
-  const CardData = [
-    {
-      description: "登録ポイント",
-      color: "#155dfc",
-      icon: LucideMapPin,
-      value: "12",
-    },
-    {
-      description: "運行ルート",
-      color: "#9810fa",
-      icon: LucideRoute,
-      value: "5",
-    },
-    {
-      description: "運行中ルート",
-      color: "#f59e0b",
-      icon: LucideZap,
-      value: "3",
-    },
-    {
-      description: "アクティブユーザ",
-      color: "#10b981",
-      icon: LucideUsers,
-      value: "120+",
-    },
-  ];
+  function topCards() {
+    const CardData = [
+      {
+        description: "登録ポイント",
+        color: "#155dfc",
+        icon: LucideMapPin,
+        value: "12",
+      },
+      {
+        description: "運行ルート",
+        color: "#9810fa",
+        icon: LucideRoute,
+        value: "5",
+      },
+      {
+        description: "運行中ルート",
+        color: "#f59e0b",
+        icon: LucideZap,
+        value: "3",
+      },
+      {
+        description: "アクティブユーザ",
+        color: "#10b981",
+        icon: LucideUsers,
+        value: "120+",
+      },
+    ];
+    return (
+      <section className="flex items-center justify-between gap-4">
+        {CardData.map((card, index) => (
+          <Card key={index.toString()} description={card.description}>
+            <div className="flex items-center justify-between">
+              <span
+                className="text-3xl font-semibold"
+                style={{ color: card.color }}
+              >
+                {card.value}
+              </span>
+              <card.icon color={card.color} size={48} opacity={0.6} />
+            </div>
+          </Card>
+        ))}
+      </section>
+    );
+  }
 
   const FukutomiMap = useMemo(
     () =>
@@ -56,30 +74,25 @@ export default function OperatorPage() {
   );
 
   const [tab, setTab] = useState<"points" | "routes">("points");
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const dialog = useRef<HTMLDialogElement>(null);
 
   return (
     <div className="w-full h-full bg-background">
-      <Dialog content={<p>Hello !</p>} isOpen={isDialogOpen} />
+      {/* DIALOG */}
+      <dialog ref={dialog} className="fixed inset-0">
+        <div className="bg-white p-8 rounded-lg shadow">
+          <p>Hello !</p>
+        </div>
+        {/* Noooooooooooooooooooooooooooooooooooooo DON't work well. I'll use dialog library instead ! */}
+      </dialog>
+
+      {/* HEADER */}
       <SubpageHeader type="operator" />
 
+      {/* MAIN CONTENT */}
       <main className="max-w-7xl mx-auto space-y-8 pt-8 pb-16 px-4">
         {/* TOP Cards */}
-        <section className="flex items-center justify-between gap-4">
-          {CardData.map((card, index) => (
-            <Card key={index.toString()} description={card.description}>
-              <div className="flex items-center justify-between">
-                <span
-                  className="text-3xl font-semibold"
-                  style={{ color: card.color }}
-                >
-                  {card.value}
-                </span>
-                <card.icon color={card.color} size={48} opacity={0.6} />
-              </div>
-            </Card>
-          ))}
-        </section>
+        {topCards()}
 
         {/* Point management area */}
         <section className="flex justify-between gap-4">
@@ -116,14 +129,14 @@ export default function OperatorPage() {
             <div className="w-full h-full">
               <Card
                 title={tab === "points" ? "ポイント一覧" : "ルート一覧"}
-                description="福富町内の条項ポイント管理"
+                description="福富町内の乗下ポイント管理"
                 operation={
                   tab === "points" && (
                     <Button
                       label="新規追加"
                       type="button"
                       filled={false}
-                      onClick={() => setIsDialogOpen(true)}
+                      onClick={() => dialog.current?.showModal()}
                       icon={<LucidePlus />}
                     />
                   )
