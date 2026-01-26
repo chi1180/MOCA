@@ -21,12 +21,21 @@ const DefaultIcon = L.icon({
 L.Marker.prototype.options.icon = DefaultIcon;
 
 export default function FukutomiMapInner() {
+  // =============================================================================
+  // Methods
+  // =============================================================================
+
+  // =============================================================================
+  // Component
+  // =============================================================================
+
   return (
     <MapContainer
       center={MAP_DATA.center}
-      zoom={MAP_DATA.scale}
+      zoom={MAP_DATA.default_scale}
       scrollWheelZoom={false}
       style={{ height: "100%", width: "100%" }}
+      minZoom={MAP_DATA.minimum_scale}
     >
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'

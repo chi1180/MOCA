@@ -5,5 +5,6 @@ import polygonData from "./polygon.json";
 export const MAP_DATA = {
   center: [34.533557, 132.750555] as L.LatLngExpression,
   polygon: polygonData as GeoJsonObject,
-  scale: 13.2,
+  default_scale: 13.2,
+  minimum_scale: 13,
 };
