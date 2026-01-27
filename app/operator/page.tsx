@@ -79,11 +79,46 @@ export default function OperatorPage() {
   return (
     <div className="w-full h-full bg-background">
       {/* DIALOG */}
-      <dialog ref={dialog} className="fixed inset-0">
-        <div className="bg-white p-8 rounded-lg shadow">
+      <dialog
+        ref={dialog}
+        className="backdrop:bg-black/50 rounded-lg shadow-xl p-0 border-0 m-auto max-w-lg"
+        style={{
+          position: "fixed",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+        }}
+      >
+        <div className="bg-white p-8 rounded-lg">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-bold">新規ポイント追加</h2>
+            <button
+              type="button"
+              onClick={() => dialog.current?.close()}
+              className="text-gray-500 hover:text-gray-700 text-2xl leading-none"
+            >
+              ×
+            </button>
+          </div>
           <p>Hello !</p>
+          <div className="mt-4 flex justify-end gap-2">
+            <Button
+              label="キャンセル"
+              type="button"
+              filled={false}
+              onClick={() => dialog.current?.close()}
+            />
+            <Button
+              label="追加"
+              type="button"
+              filled={true}
+              onClick={() => {
+                // Add your logic here
+                dialog.current?.close();
+              }}
+            />
+          </div>
         </div>
-        {/* Noooooooooooooooooooooooooooooooooooooo DON't work well. I'll use dialog library instead ! */}
       </dialog>
 
       {/* HEADER */}
