@@ -74,7 +74,7 @@ export default function PointCard({
         {/* Icon */}
         <div
           className={`
-            flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center
+            shrink-0 w-10 h-10 rounded-full flex items-center justify-center
             ${isSelected ? "bg-primary text-white" : "bg-gray-100 text-gray-600"}
           `}
         >
@@ -89,7 +89,7 @@ export default function PointCard({
             </h3>
             <span
               className={`
-                text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0
+                text-xs px-2 py-0.5 rounded-full font-medium shrink-0
                 ${getTypeColor(point.type)}
               `}
             >
@@ -106,7 +106,7 @@ export default function PointCard({
         </div>
 
         {/* Action buttons */}
-        <div className="flex-shrink-0 flex items-center gap-1">
+        <div className="shrink-0 flex items-center gap-1">
           {/* Edit button */}
           <button
             type="button"

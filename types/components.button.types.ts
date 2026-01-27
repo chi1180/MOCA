@@ -1,6 +1,6 @@
 export interface ButtonProps {
   type: "button" | "link";
-  label: string;
+  label?: string;
   href?: string;
   filled?: boolean;
   disabled?: boolean;

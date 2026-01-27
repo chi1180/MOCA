@@ -265,7 +265,7 @@ export default function OperatorPage() {
           <div className="flex items-start gap-3 p-4 bg-red-50 rounded-lg border border-red-200">
             <LucideAlertTriangle
               size={24}
-              className="text-red-500 flex-shrink-0 mt-0.5"
+              className="text-red-500 shrink-0 mt-0.5"
             />
             <div>
               <p className="text-sm text-gray-700">
@@ -362,7 +362,6 @@ export default function OperatorPage() {
                   tab === "points" && (
                     <div className="flex gap-2">
                       <Button
-                        label=""
                         type="button"
                         filled={true}
                         onClick={fetchPoints}

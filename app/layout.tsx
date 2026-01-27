@@ -54,6 +54,9 @@ export default function RootLayout({
           }}
         />
         {children}
+        <footer className="bg-text-secondary text-text-accent py-12 text-center border-t-2 border-t-text-primary">
+          © 2025 MOCA. All rights reserved.
+        </footer>
       </body>
     </html>
   );

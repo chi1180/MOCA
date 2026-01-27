@@ -47,10 +47,8 @@ export default function Button({
               : "bg-primary text-text-accent border-background"
           } ${disabled ? "opacity-60 cursor-not-allowed" : "hover:brightness-90 transition-all duration-300"}`}
         >
-          <div className="flex items-center">
-            {icon && (
-              <span className="mr-2 inline-block align-middle">{icon}</span>
-            )}
+          <div className="flex items-center gap-2">
+            {icon && <span className="inline-block align-middle">{icon}</span>}
             {label}
           </div>
         </button>
