@@ -5,8 +5,13 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import type { PointAddProps } from "@/types/components.point_add.types";
 import Button from "./Button";
+import type L from "leaflet";
 
-export default function PointAdd({ onSubmit, onCancel }: PointAddProps) {
+export default function PointAdd({
+  onSubmit,
+  onCancel,
+  isOpen,
+}: PointAddProps) {
   const ElementIDs = {
     name: useId(),
     address: useId(),
@@ -22,24 +27,40 @@ export default function PointAdd({ onSubmit, onCancel }: PointAddProps) {
   const [isMapReady, setIsMapReady] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
+  const mapRef = useRef<L.Map | null>(null);
+  const [mapKey, setMapKey] = useState(0);
 
-  // ダイアログが開かれた後にマップをレンダリング
+  // ダイアログの開閉に応じてマップを再初期化
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsMapReady(true);
-    }, 100);
+    if (isOpen) {
+      // ダイアログが閉じていた場合はマップをリセット
+      setIsMapReady(false);
+      // マップを強制的に再マウント
+      setMapKey((prev) => prev + 1);
 
-    return () => clearTimeout(timer);
-  }, []);
+      const timer = setTimeout(() => {
+        setIsMapReady(true);
+      }, 200);
 
-  // マップのサイズを再計算（Dialogが完全に開いた後）
+      return () => clearTimeout(timer);
+    } else {
+      // ダイアログが閉じたらマップをリセット
+      setIsMapReady(false);
+      setMarkerPosition(null);
+    }
+  }, [isOpen]);
+
+  // マップのサイズを再計算（ダイアログのアニメーション完了後）
   useEffect(() => {
-    if (isMapReady) {
-      // 複数回リサイズイベントを発火して確実にマップをレンダリング
+    if (isMapReady && mapRef.current) {
+      // keyによる再マウントと組み合わせて、確実にレンダリング
       const timers = [
-        setTimeout(() => window.dispatchEvent(new Event("resize")), 100),
-        setTimeout(() => window.dispatchEvent(new Event("resize")), 300),
-        setTimeout(() => window.dispatchEvent(new Event("resize")), 500),
+        setTimeout(() => {
+          mapRef.current?.invalidateSize();
+        }, 200),
+        setTimeout(() => {
+          mapRef.current?.invalidateSize();
+        }, 500),
       ];
 
       return () => {
@@ -159,9 +180,11 @@ export default function PointAdd({ onSubmit, onCancel }: PointAddProps) {
       <div className="w-full h-64 border border-gray-200 rounded-lg overflow-hidden relative">
         {isMapReady ? (
           <FukutomiMap
+            key={mapKey}
             className="w-full h-full"
             onMapClick={(lat, lng) => setMarkerPosition([lat, lng])}
             markerPosition={markerPosition}
+            ref={mapRef}
           />
         ) : (
           <div className="w-full h-full bg-slate-100 animate-pulse flex items-center justify-center">

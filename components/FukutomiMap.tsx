@@ -3,7 +3,7 @@
 import { MAP_DATA } from "@/data/data";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { useEffect } from "react";
+import { forwardRef, useEffect } from "react";
 import {
   GeoJSON,
   MapContainer,
@@ -50,8 +50,19 @@ function MapClickHandler({
   return null;
 }
 
-function MapInvalidator() {
+function MapInvalidator({
+  mapRef,
+}: {
+  mapRef?: React.MutableRefObject<L.Map | null>;
+}) {
   const map = useMap();
+
+  // 親コンポーネントにマップインスタンスを公開
+  useEffect(() => {
+    if (mapRef) {
+      mapRef.current = map;
+    }
+  }, [map, mapRef]);
 
   useEffect(() => {
     // 初期レンダリング時にサイズを再計算
@@ -75,47 +86,41 @@ function MapInvalidator() {
   return null;
 }
 
-export default function FukutomiMapInner({
-  className,
-  onMapClick,
-  markerPosition,
-}: FukutomiMapProps) {
-  // =============================================================================
-  // Methods
-  // =============================================================================
+const FukutomiMapInner = forwardRef<L.Map | null, FukutomiMapProps>(
+  function FukutomiMapInner({ className, onMapClick, markerPosition }, ref) {
+    const mapRef = ref as React.MutableRefObject<L.Map | null> | undefined;
 
-  // =============================================================================
-  // Component
-  // =============================================================================
+    return (
+      <MapContainer
+        center={MAP_DATA.center}
+        zoom={MAP_DATA.default_scale}
+        scrollWheelZoom={false}
+        style={{ height: "100%", width: "100%", zIndex: 0 }}
+        minZoom={MAP_DATA.minimum_scale}
+        maxBounds={MAP_DATA.max_bounds}
+        maxBoundsViscosity={1.0}
+        className={className}
+      >
+        <TileLayer
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          maxZoom={19}
+        />
 
-  return (
-    <MapContainer
-      center={MAP_DATA.center}
-      zoom={MAP_DATA.default_scale}
-      scrollWheelZoom={false}
-      style={{ height: "100%", width: "100%", zIndex: 0 }}
-      minZoom={MAP_DATA.minimum_scale}
-      maxBounds={MAP_DATA.max_bounds}
-      maxBoundsViscosity={1.0}
-      className={className}
-    >
-      <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        maxZoom={19}
-      />
+        <GeoJSON data={MAP_DATA.polygon} />
 
-      <GeoJSON data={MAP_DATA.polygon} />
+        {markerPosition && (
+          <Marker position={markerPosition}>
+            <Popup>選択された位置</Popup>
+          </Marker>
+        )}
 
-      {markerPosition && (
-        <Marker position={markerPosition}>
-          <Popup>選択された位置</Popup>
-        </Marker>
-      )}
+        {onMapClick && <MapClickHandler onMapClick={onMapClick} />}
 
-      {onMapClick && <MapClickHandler onMapClick={onMapClick} />}
+        <MapInvalidator mapRef={mapRef} />
+      </MapContainer>
+    );
+  },
+);
 
-      <MapInvalidator />
-    </MapContainer>
-  );
-}
+export default FukutomiMapInner;

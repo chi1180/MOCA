@@ -102,6 +102,7 @@ export default function OperatorPage() {
         <PointAdd
           onSubmit={handlePointAddSubmit}
           onCancel={handlePointAddCancel}
+          isOpen={isDialogOpen}
         />
       </Dialog>
 
