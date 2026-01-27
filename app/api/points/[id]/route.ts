@@ -25,6 +25,7 @@ function dbRowToPoint(row: {
   longitude: number;
   is_base_point: boolean | null;
   created_at: string | null;
+  stop_type: string;
 }): PointWithId {
   return {
     id: row.id,
@@ -32,7 +33,7 @@ function dbRowToPoint(row: {
     address: row.address ?? "",
     latitude: row.latitude,
     longitude: row.longitude,
-    type: "get_on_off",
+    type: row.stop_type as "get_on" | "get_off" | "get_on_off",
     createdAt: row.created_at ?? new Date().toISOString(),
   };
 }
@@ -102,7 +103,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       return Response.json(response, { status: 400 });
     }
 
-    const { name, address, latitude, longitude } = validationResult.data;
+    const { name, address, latitude, longitude, type } = validationResult.data;
 
     const { data, error } = await supabase
       .from("stops")
@@ -111,6 +112,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         address,
         latitude,
         longitude,
+        stop_type: type,
       })
       .eq("id", id)
       .select()
