@@ -2,6 +2,7 @@
 
 import Button from "@/components/Button";
 import Card from "@/components/Card";
+import PointAdd from "@/components/PointAdd";
 import SubpageHeader from "@/components/SubpageHeader";
 import {
   LucideMapPin,
@@ -75,15 +76,20 @@ export default function OperatorPage() {
 
   const [tab, setTab] = useState<"points" | "routes">("points");
   const dialog = useRef<HTMLDialogElement>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   return (
     <div className="w-full h-full bg-background">
       {/* DIALOG */}
       <dialog
         ref={dialog}
-        className="backdrop:bg-black/50 rounded-lg shadow-xl p-0 border-0 m-auto max-w-lg"
+        className="backdrop:bg-black/50 rounded-lg shadow-xl p-0 border-0 m-auto max-w-2xl w-full"
+        onClose={() => {
+          // ダイアログが閉じられた時にマップをリセット
+          setTab("points");
+        }}
       >
-        <div className="bg-white p-8 rounded-lg">
+        <div className="bg-white p-6 rounded-lg max-h-[90vh] overflow-y-auto">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-bold">新規ポイント追加</h2>
             <button
@@ -94,24 +100,18 @@ export default function OperatorPage() {
               ×
             </button>
           </div>
-          <p>Hello !</p>
-          <div className="mt-4 flex justify-end gap-2">
-            <Button
-              label="キャンセル"
-              type="button"
-              filled={false}
-              onClick={() => dialog.current?.close()}
-            />
-            <Button
-              label="追加"
-              type="button"
-              filled={true}
-              onClick={() => {
-                // Add your logic here
+          {isDialogOpen && (
+            <PointAdd
+              onSubmit={() => {
                 dialog.current?.close();
+                setIsDialogOpen(false);
+              }}
+              onCancel={() => {
+                dialog.current?.close();
+                setIsDialogOpen(false);
               }}
             />
-          </div>
+          )}
         </div>
       </dialog>
 
@@ -165,7 +165,10 @@ export default function OperatorPage() {
                       label="新規追加"
                       type="button"
                       filled={false}
-                      onClick={() => dialog.current?.showModal()}
+                      onClick={() => {
+                        setIsDialogOpen(true);
+                        dialog.current?.showModal();
+                      }}
                       icon={<LucidePlus />}
                     />
                   )
