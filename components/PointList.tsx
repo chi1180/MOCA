@@ -8,6 +8,8 @@ interface PointListProps {
   points: PointWithId[];
   selectedPointId: string | null;
   onPointSelect: (point: PointWithId) => void;
+  onPointEdit: (point: PointWithId) => void;
+  onPointDelete: (point: PointWithId) => void;
   isLoading?: boolean;
   error?: string | null;
 }
@@ -16,6 +18,8 @@ export default function PointList({
   points,
   selectedPointId,
   onPointSelect,
+  onPointEdit,
+  onPointDelete,
   isLoading = false,
   error = null,
 }: PointListProps) {
@@ -46,7 +50,9 @@ export default function PointList({
       <div className="flex flex-col items-center justify-center py-12 text-gray-500">
         <LucideMapPinOff size={32} className="mb-3 opacity-60" />
         <p className="text-sm font-medium">ポイントがありません</p>
-        <p className="text-xs mt-1">「新規追加」ボタンからポイントを追加してください</p>
+        <p className="text-xs mt-1">
+          「新規追加」ボタンからポイントを追加してください
+        </p>
       </div>
     );
   }
@@ -60,6 +66,8 @@ export default function PointList({
           point={point}
           isSelected={selectedPointId === point.id}
           onClick={() => onPointSelect(point)}
+          onEdit={onPointEdit}
+          onDelete={onPointDelete}
         />
       ))}
     </div>

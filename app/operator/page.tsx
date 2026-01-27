@@ -8,6 +8,7 @@ import PointList from "@/components/PointList";
 import SubpageHeader from "@/components/SubpageHeader";
 import type { PointWithId } from "@/types/api.points.types";
 import {
+  LucideAlertTriangle,
   LucideMapPin,
   LucidePlus,
   LucideRefreshCw,
@@ -17,6 +18,7 @@ import {
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import toast from "react-hot-toast";
 
 export default function OperatorPage() {
   // State for points data
@@ -27,7 +29,12 @@ export default function OperatorPage() {
 
   // Dialog state
   const [tab, setTab] = useState<"points" | "routes">("points");
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [editingPoint, setEditingPoint] = useState<PointWithId | null>(null);
+  const [deletingPoint, setDeletingPoint] = useState<PointWithId | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Fetch points from API
   const fetchPoints = useCallback(async () => {
@@ -66,19 +73,94 @@ export default function OperatorPage() {
     setSelectedPointId(point.id);
   }, []);
 
-  // Dialog handlers
-  const handleDialogClose = () => {
-    setIsDialogOpen(false);
+  // Add dialog handlers
+  const handleAddDialogClose = () => {
+    setIsAddDialogOpen(false);
   };
 
   const handlePointAddSubmit = () => {
-    setIsDialogOpen(false);
-    // Refresh points list after adding new point
+    setIsAddDialogOpen(false);
     fetchPoints();
   };
 
   const handlePointAddCancel = () => {
-    setIsDialogOpen(false);
+    setIsAddDialogOpen(false);
+  };
+
+  // Edit dialog handlers
+  const handleEditDialogClose = () => {
+    setIsEditDialogOpen(false);
+    setEditingPoint(null);
+  };
+
+  const handlePointEdit = useCallback((point: PointWithId) => {
+    setEditingPoint(point);
+    setIsEditDialogOpen(true);
+  }, []);
+
+  const handlePointEditSubmit = () => {
+    setIsEditDialogOpen(false);
+    setEditingPoint(null);
+    fetchPoints();
+  };
+
+  const handlePointEditCancel = () => {
+    setIsEditDialogOpen(false);
+    setEditingPoint(null);
+  };
+
+  // Delete dialog handlers
+  const handleDeleteDialogClose = () => {
+    setIsDeleteDialogOpen(false);
+    setDeletingPoint(null);
+  };
+
+  const handlePointDelete = useCallback((point: PointWithId) => {
+    setDeletingPoint(point);
+    setIsDeleteDialogOpen(true);
+  }, []);
+
+  const handleConfirmDelete = async () => {
+    if (!deletingPoint) return;
+
+    setIsDeleting(true);
+    const loadingToast = toast.loading("ポイントを削除中...");
+
+    try {
+      const response = await fetch(`/api/points/${deletingPoint.id}`, {
+        method: "DELETE",
+      });
+
+      const result = await response.json();
+      toast.dismiss(loadingToast);
+
+      if (!response.ok) {
+        toast.error(result.error || "ポイントの削除に失敗しました");
+        return;
+      }
+
+      toast.success(result.message || "ポイントが正常に削除されました");
+
+      // Clear selection if the deleted point was selected
+      if (selectedPointId === deletingPoint.id) {
+        setSelectedPointId(null);
+      }
+
+      setIsDeleteDialogOpen(false);
+      setDeletingPoint(null);
+      fetchPoints();
+    } catch (error) {
+      toast.dismiss(loadingToast);
+      console.error("Error deleting point:", error);
+      toast.error("ネットワークエラーが発生しました");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setIsDeleteDialogOpen(false);
+    setDeletingPoint(null);
   };
 
   // Dynamic import of map component (no SSR)
@@ -144,17 +226,82 @@ export default function OperatorPage() {
 
   return (
     <div className="w-full h-full bg-background">
-      {/* DIALOG */}
+      {/* ADD DIALOG */}
       <Dialog
-        isOpen={isDialogOpen}
-        onClose={handleDialogClose}
+        isOpen={isAddDialogOpen}
+        onClose={handleAddDialogClose}
         title="新規ポイント追加"
       >
         <PointAdd
+          mode="create"
           onSubmit={handlePointAddSubmit}
           onCancel={handlePointAddCancel}
-          isOpen={isDialogOpen}
+          isOpen={isAddDialogOpen}
         />
+      </Dialog>
+
+      {/* EDIT DIALOG */}
+      <Dialog
+        isOpen={isEditDialogOpen}
+        onClose={handleEditDialogClose}
+        title="ポイント編集"
+      >
+        <PointAdd
+          mode="edit"
+          editPoint={editingPoint}
+          onSubmit={handlePointEditSubmit}
+          onCancel={handlePointEditCancel}
+          isOpen={isEditDialogOpen}
+        />
+      </Dialog>
+
+      {/* DELETE CONFIRMATION DIALOG */}
+      <Dialog
+        isOpen={isDeleteDialogOpen}
+        onClose={handleDeleteDialogClose}
+        title="ポイント削除の確認"
+      >
+        <div className="space-y-4">
+          <div className="flex items-start gap-3 p-4 bg-red-50 rounded-lg border border-red-200">
+            <LucideAlertTriangle
+              size={24}
+              className="text-red-500 flex-shrink-0 mt-0.5"
+            />
+            <div>
+              <p className="text-sm text-gray-700">
+                以下のポイントを削除しますか？この操作は取り消せません。
+              </p>
+              {deletingPoint && (
+                <div className="mt-3 p-3 bg-white rounded border border-red-100">
+                  <p className="font-semibold text-gray-900">
+                    {deletingPoint.name}
+                  </p>
+                  <p className="text-sm text-gray-600 mt-1">
+                    {deletingPoint.address}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2">
+            <Button
+              type="button"
+              label="キャンセル"
+              onClick={handleCancelDelete}
+              filled={true}
+              disabled={isDeleting}
+            />
+            <button
+              type="button"
+              onClick={handleConfirmDelete}
+              disabled={isDeleting}
+              className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 border-red-600 border-2 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isDeleting ? "削除中..." : "削除する"}
+            </button>
+          </div>
+        </div>
       </Dialog>
 
       {/* HEADER */}
@@ -230,7 +377,7 @@ export default function OperatorPage() {
                         label="新規追加"
                         type="button"
                         filled={false}
-                        onClick={() => setIsDialogOpen(true)}
+                        onClick={() => setIsAddDialogOpen(true)}
                         icon={<LucidePlus />}
                       />
                     </div>
@@ -242,6 +389,8 @@ export default function OperatorPage() {
                     points={points}
                     selectedPointId={selectedPointId}
                     onPointSelect={handlePointSelect}
+                    onPointEdit={handlePointEdit}
+                    onPointDelete={handlePointDelete}
                     isLoading={isLoadingPoints}
                     error={pointsError}
                   />

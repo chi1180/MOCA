@@ -1,10 +1,12 @@
-import { LucideMapPin } from "lucide-react";
+import { LucideMapPin, LucidePencil, LucideTrash2 } from "lucide-react";
 import type { PointWithId } from "@/types/api.points.types";
 
 interface PointCardProps {
   point: PointWithId;
   isSelected: boolean;
   onClick: () => void;
+  onEdit: (point: PointWithId) => void;
+  onDelete: (point: PointWithId) => void;
 }
 
 // Get label for point type
@@ -39,7 +41,21 @@ export default function PointCard({
   point,
   isSelected,
   onClick,
+  onEdit,
+  onDelete,
 }: PointCardProps) {
+  // Handle edit button click
+  const handleEditClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onEdit(point);
+  };
+
+  // Handle delete button click
+  const handleDeleteClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onDelete(point);
+  };
+
   return (
     <button
       type="button"
@@ -87,6 +103,29 @@ export default function PointCard({
             <span>緯度: {point.latitude.toFixed(6)}</span>
             <span>経度: {point.longitude.toFixed(6)}</span>
           </div>
+        </div>
+
+        {/* Action buttons */}
+        <div className="flex-shrink-0 flex items-center gap-1">
+          {/* Edit button */}
+          <button
+            type="button"
+            onClick={handleEditClick}
+            className="p-2 rounded-full hover:bg-blue-100 text-gray-500 hover:text-blue-600 transition-colors"
+            title="編集"
+          >
+            <LucidePencil size={16} />
+          </button>
+
+          {/* Delete button */}
+          <button
+            type="button"
+            onClick={handleDeleteClick}
+            className="p-2 rounded-full hover:bg-red-100 text-gray-500 hover:text-red-600 transition-colors"
+            title="削除"
+          >
+            <LucideTrash2 size={16} />
+          </button>
         </div>
       </div>
     </button>

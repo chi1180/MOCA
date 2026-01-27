@@ -11,7 +11,11 @@ export default function PointAdd({
   onSubmit,
   onCancel,
   isOpen,
+  mode = "create",
+  editPoint = null,
 }: PointAddProps) {
+  const isEditMode = mode === "edit" && editPoint !== null;
+
   const ElementIDs = {
     name: useId(),
     address: useId(),
@@ -23,6 +27,11 @@ export default function PointAdd({
   const [markerPosition, setMarkerPosition] = useState<[number, number] | null>(
     null,
   );
+  const [formData, setFormData] = useState({
+    name: "",
+    address: "",
+    type: "get_on_off",
+  });
 
   const [isMapReady, setIsMapReady] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -30,12 +39,30 @@ export default function PointAdd({
   const mapRef = useRef<FukutomiMapRef | null>(null);
   const [mapKey, setMapKey] = useState(0);
 
-  // ダイアログの開閉に応じてマップを再初期化
+  // Initialize form data when editing
+  useEffect(() => {
+    if (isOpen && isEditMode && editPoint) {
+      setFormData({
+        name: editPoint.name,
+        address: editPoint.address,
+        type: editPoint.type,
+      });
+      setMarkerPosition([editPoint.latitude, editPoint.longitude]);
+    } else if (isOpen && !isEditMode) {
+      // Reset form for create mode
+      setFormData({
+        name: "",
+        address: "",
+        type: "get_on_off",
+      });
+      setMarkerPosition(null);
+    }
+  }, [isOpen, isEditMode, editPoint]);
+
+  // Initialize map when dialog opens
   useEffect(() => {
     if (isOpen) {
-      // ダイアログが閉じていた場合はマップをリセット
       setIsMapReady(false);
-      // マップを強制的に再マウント
       setMapKey((prev) => prev + 1);
 
       const timer = setTimeout(() => {
@@ -44,22 +71,30 @@ export default function PointAdd({
 
       return () => clearTimeout(timer);
     } else {
-      // ダイアログが閉じたらマップをリセット
       setIsMapReady(false);
-      setMarkerPosition(null);
+      if (!isEditMode) {
+        setMarkerPosition(null);
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, isEditMode]);
 
-  // マップのサイズを再計算（ダイアログのアニメーション完了後）
+  // Recalculate map size after dialog animation
   useEffect(() => {
     if (isMapReady && mapRef.current) {
-      // keyによる再マウントと組み合わせて、確実にレンダリング
       const timers = [
         setTimeout(() => {
           mapRef.current?.invalidateSize();
         }, 200),
         setTimeout(() => {
           mapRef.current?.invalidateSize();
+          // Fly to marker position if editing
+          if (isEditMode && markerPosition) {
+            mapRef.current?.flyToPoint(
+              markerPosition[0],
+              markerPosition[1],
+              15,
+            );
+          }
         }, 500),
       ];
 
@@ -69,7 +104,7 @@ export default function PointAdd({
         });
       };
     }
-  }, [isMapReady]);
+  }, [isMapReady, isEditMode, markerPosition]);
 
   const FukutomiMap = useMemo(
     () =>
@@ -89,33 +124,36 @@ export default function PointAdd({
 
     if (isSubmitting) return;
 
-    const formData = new FormData(e.currentTarget);
-
     const data = {
-      name: formData.get("name") as string,
-      address: formData.get("address") as string,
-      latitude: parseFloat(formData.get("latitude") as string),
-      longitude: parseFloat(formData.get("longitude") as string),
-      type: formData.get("type") as string,
+      name: formData.name,
+      address: formData.address,
+      latitude: markerPosition?.[0] ?? 0,
+      longitude: markerPosition?.[1] ?? 0,
+      type: formData.type,
     };
 
-    // クライアント側でのバリデーション
+    // Client-side validation
     if (!data.name || !data.address) {
       toast.error("すべての必須項目を入力してください");
       return;
     }
 
-    if (Number.isNaN(data.latitude) || Number.isNaN(data.longitude)) {
+    if (!markerPosition) {
       toast.error("地図上をクリックして位置を指定してください");
       return;
     }
 
     setIsSubmitting(true);
-    const loadingToast = toast.loading("ポイントを追加中...");
+    const loadingToast = toast.loading(
+      isEditMode ? "ポイントを更新中..." : "ポイントを追加中...",
+    );
 
     try {
-      const response = await fetch("/api/points", {
-        method: "POST",
+      const url = isEditMode ? `/api/points/${editPoint?.id}` : "/api/points";
+      const method = isEditMode ? "PUT" : "POST";
+
+      const response = await fetch(url, {
+        method,
         headers: {
           "Content-Type": "application/json",
         },
@@ -127,7 +165,6 @@ export default function PointAdd({
       toast.dismiss(loadingToast);
 
       if (!response.ok) {
-        // バリデーションエラーの詳細を表示
         if (result.details && Array.isArray(result.details)) {
           result.details.forEach(
             (detail: { field: string; message: string }) => {
@@ -135,21 +172,35 @@ export default function PointAdd({
             },
           );
         } else {
-          toast.error(result.error || "ポイントの追加に失敗しました");
+          toast.error(
+            result.error ||
+              (isEditMode
+                ? "ポイントの更新に失敗しました"
+                : "ポイントの追加に失敗しました"),
+          );
         }
         return;
       }
 
-      // 成功時
-      toast.success(result.message || "ポイントが正常に追加されました");
+      // Success
+      toast.success(
+        result.message ||
+          (isEditMode
+            ? "ポイントが正常に更新されました"
+            : "ポイントが正常に追加されました"),
+      );
 
-      // フォームをリセット
+      // Reset form
       if (formRef.current) {
         formRef.current.reset();
       }
+      setFormData({
+        name: "",
+        address: "",
+        type: "get_on_off",
+      });
       setMarkerPosition(null);
 
-      // 親コンポーネントのonSubmitを呼び出す（存在する場合）
       if (onSubmit) {
         onSubmit(e);
       }
@@ -160,6 +211,16 @@ export default function PointAdd({
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
   const Styles = {
@@ -173,7 +234,9 @@ export default function PointAdd({
     <div className="w-full space-y-4">
       {/* Description */}
       <p className="text-sm text-gray-600">
-        福富町に新しい乗降ポイントを追加します
+        {isEditMode
+          ? "ポイント情報を編集します"
+          : "福富町に新しい乗降ポイントを追加します"}
       </p>
 
       {/* Map */}
@@ -211,6 +274,8 @@ export default function PointAdd({
             required
             className={Styles.input}
             disabled={isSubmitting}
+            value={formData.name}
+            onChange={handleInputChange}
           />
         </div>
 
@@ -224,10 +289,11 @@ export default function PointAdd({
             name="address"
             type="text"
             placeholder="例：広島県東広島市福富町久芳1545-1"
-            defaultValue=""
             required
             className={Styles.input}
             disabled={isSubmitting}
+            value={formData.address}
+            onChange={handleInputChange}
           />
         </div>
 
@@ -247,7 +313,7 @@ export default function PointAdd({
               required
               className={Styles.input}
               value={markerPosition?.[0] ?? ""}
-              onChange={() => {}} // controlled componentとして動作させる
+              readOnly
               disabled={isSubmitting}
             />
           </div>
@@ -266,7 +332,7 @@ export default function PointAdd({
               required
               className={Styles.input}
               value={markerPosition?.[1] ?? ""}
-              onChange={() => {}} // controlled componentとして動作させる
+              readOnly
               disabled={isSubmitting}
             />
           </div>
@@ -280,10 +346,11 @@ export default function PointAdd({
           <select
             id={ElementIDs.type}
             name="type"
-            defaultValue="get_on_off"
             className={Styles.input}
             required
             disabled={isSubmitting}
+            value={formData.type}
+            onChange={handleInputChange}
           >
             <option value="get_on_off">乗下車可</option>
             <option value="get_on">乗車可</option>
@@ -291,7 +358,7 @@ export default function PointAdd({
           </select>
         </div>
 
-        {/* ボタン */}
+        {/* Buttons */}
         <div className="flex justify-end gap-2 pt-4">
           <Button
             type="button"
@@ -305,7 +372,13 @@ export default function PointAdd({
             className="px-4 bg-primary text-white rounded-md hover:brightness-90 border-primary border-2 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={isSubmitting}
           >
-            {isSubmitting ? "追加中..." : "追加する"}
+            {isSubmitting
+              ? isEditMode
+                ? "更新中..."
+                : "追加中..."
+              : isEditMode
+                ? "更新する"
+                : "追加する"}
           </button>
         </div>
       </form>
