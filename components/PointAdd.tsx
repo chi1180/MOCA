@@ -4,8 +4,8 @@ import dynamic from "next/dynamic";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import type { PointAddProps } from "@/types/components.point_add.types";
+import type { FukutomiMapRef } from "@/types/components.map.types";
 import Button from "./Button";
-import type L from "leaflet";
 
 export default function PointAdd({
   onSubmit,
@@ -27,7 +27,7 @@ export default function PointAdd({
   const [isMapReady, setIsMapReady] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
-  const mapRef = useRef<L.Map | null>(null);
+  const mapRef = useRef<FukutomiMapRef | null>(null);
   const [mapKey, setMapKey] = useState(0);
 
   // ダイアログの開閉に応じてマップを再初期化

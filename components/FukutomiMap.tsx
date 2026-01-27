@@ -1,9 +1,14 @@
 "use client";
 
 import { MAP_DATA } from "@/data/data";
+import type { PointWithId } from "@/types/api.points.types";
+import type {
+  FukutomiMapProps,
+  FukutomiMapRef,
+} from "@/types/components.map.types";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { forwardRef, useEffect } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
 import {
   GeoJSON,
   MapContainer,
@@ -14,6 +19,7 @@ import {
   useMapEvents,
 } from "react-leaflet";
 
+// Default marker icon
 const iconUrl = "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png";
 const iconRetinaUrl =
   "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png";
@@ -26,15 +32,25 @@ const DefaultIcon = L.icon({
   shadowUrl,
   iconSize: [25, 41],
   iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
 });
+
+// Highlighted marker icon (orange/primary color)
+const HighlightedIcon = L.icon({
+  iconUrl:
+    "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-orange.png",
+  shadowUrl,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+});
+
 L.Marker.prototype.options.icon = DefaultIcon;
 
-interface FukutomiMapProps {
-  className?: string;
-  onMapClick?: (lat: number, lng: number) => void;
-  markerPosition?: [number, number] | null;
-}
+// Re-export types for convenience
+export type { FukutomiMapRef, FukutomiMapProps };
 
+// Handle map click events
 function MapClickHandler({
   onMapClick,
 }: {
@@ -50,27 +66,29 @@ function MapClickHandler({
   return null;
 }
 
-function MapInvalidator({
-  mapRef,
+// Handle map resize and expose map instance
+function MapController({
+  mapInstanceRef,
+  selectedPointId,
+  points,
 }: {
-  mapRef?: React.MutableRefObject<L.Map | null>;
+  mapInstanceRef: React.MutableRefObject<L.Map | null>;
+  selectedPointId?: string | null;
+  points?: PointWithId[];
 }) {
   const map = useMap();
 
-  // 親コンポーネントにマップインスタンスを公開
+  // Store map instance
   useEffect(() => {
-    if (mapRef) {
-      mapRef.current = map;
-    }
-  }, [map, mapRef]);
+    mapInstanceRef.current = map;
+  }, [map, mapInstanceRef]);
 
+  // Handle resize
   useEffect(() => {
-    // 初期レンダリング時にサイズを再計算
     const timer = setTimeout(() => {
       map.invalidateSize();
     }, 100);
 
-    // windowのresizeイベントを監視
     const handleResize = () => {
       map.invalidateSize();
     };
@@ -83,12 +101,82 @@ function MapInvalidator({
     };
   }, [map]);
 
+  // Fly to selected point when it changes
+  useEffect(() => {
+    if (selectedPointId && points) {
+      const selectedPoint = points.find((p) => p.id === selectedPointId);
+      if (selectedPoint) {
+        map.flyTo([selectedPoint.latitude, selectedPoint.longitude], 15, {
+          duration: 0.5,
+        });
+      }
+    }
+  }, [selectedPointId, points, map]);
+
   return null;
 }
 
-const FukutomiMapInner = forwardRef<L.Map | null, FukutomiMapProps>(
-  function FukutomiMapInner({ className, onMapClick, markerPosition }, ref) {
-    const mapRef = ref as React.MutableRefObject<L.Map | null> | undefined;
+// Get type label for popup
+function getTypeLabel(type: string): string {
+  switch (type) {
+    case "get_on_off":
+      return "乗降可";
+    case "get_on":
+      return "乗車のみ";
+    case "get_off":
+      return "降車のみ";
+    default:
+      return type;
+  }
+}
+
+const FukutomiMap = forwardRef<FukutomiMapRef, FukutomiMapProps>(
+  function FukutomiMap(
+    {
+      className,
+      onMapClick,
+      markerPosition,
+      points = [],
+      selectedPointId,
+      onPointClick,
+    },
+    ref,
+  ) {
+    const mapInstanceRef = useRef<L.Map | null>(null);
+    const markerRefs = useRef<Map<string, L.Marker>>(new Map());
+
+    // Expose methods to parent component
+    useImperativeHandle(ref, () => ({
+      flyToPoint: (lat: number, lng: number, zoom = 15) => {
+        if (mapInstanceRef.current) {
+          mapInstanceRef.current.flyTo([lat, lng], zoom, { duration: 0.5 });
+        }
+      },
+      openPopupForPoint: (pointId: string) => {
+        const marker = markerRefs.current.get(pointId);
+        if (marker) {
+          marker.openPopup();
+        }
+      },
+      invalidateSize: () => {
+        if (mapInstanceRef.current) {
+          mapInstanceRef.current.invalidateSize();
+        }
+      },
+    }));
+
+    // Open popup when point is selected
+    useEffect(() => {
+      if (selectedPointId) {
+        const marker = markerRefs.current.get(selectedPointId);
+        if (marker) {
+          // Small delay to ensure map has flown to location
+          setTimeout(() => {
+            marker.openPopup();
+          }, 600);
+        }
+      }
+    }, [selectedPointId]);
 
     return (
       <MapContainer
@@ -109,18 +197,63 @@ const FukutomiMapInner = forwardRef<L.Map | null, FukutomiMapProps>(
 
         <GeoJSON data={MAP_DATA.polygon} />
 
+        {/* Single marker position (for point creation) */}
         {markerPosition && (
           <Marker position={markerPosition}>
             <Popup>選択された位置</Popup>
           </Marker>
         )}
 
+        {/* Multiple point markers */}
+        {points.map((point) => {
+          const isSelected = selectedPointId === point.id;
+          return (
+            <Marker
+              key={point.id}
+              position={[point.latitude, point.longitude]}
+              icon={isSelected ? HighlightedIcon : DefaultIcon}
+              eventHandlers={{
+                click: () => {
+                  if (onPointClick) {
+                    onPointClick(point);
+                  }
+                },
+              }}
+              ref={(markerRef) => {
+                if (markerRef) {
+                  markerRefs.current.set(point.id, markerRef);
+                }
+              }}
+            >
+              <Popup>
+                <div className="min-w-[200px]">
+                  <h3 className="font-bold text-base mb-1">{point.name}</h3>
+                  <p className="text-sm text-gray-600 mb-2">{point.address}</p>
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 font-medium">
+                      {getTypeLabel(point.type)}
+                    </span>
+                  </div>
+                  <div className="mt-2 text-xs text-gray-500">
+                    <div>緯度: {point.latitude.toFixed(6)}</div>
+                    <div>経度: {point.longitude.toFixed(6)}</div>
+                  </div>
+                </div>
+              </Popup>
+            </Marker>
+          );
+        })}
+
         {onMapClick && <MapClickHandler onMapClick={onMapClick} />}
 
-        <MapInvalidator mapRef={mapRef} />
+        <MapController
+          mapInstanceRef={mapInstanceRef}
+          selectedPointId={selectedPointId}
+          points={points}
+        />
       </MapContainer>
     );
   },
 );
 
-export default FukutomiMapInner;
+export default FukutomiMap;
