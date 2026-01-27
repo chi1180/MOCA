@@ -1,6 +1,12 @@
 import type { NextRequest } from "next/server";
-import { NextResponse } from "next/server";
-import type { z } from "zod";
+import { supabase } from "@/lib/supabase";
+import {
+  successResponse,
+  errorResponse,
+  validateBody,
+  handleSupabaseError,
+  parseQueryParams,
+} from "@/lib/api-helpers";
 import {
   pointSchema,
   type CreatePointResponse,
@@ -8,15 +14,79 @@ import {
   type PointWithId,
 } from "@/types/api.points.types";
 
+// Helper to convert DB row to API response format
+function dbRowToPoint(row: {
+  id: string;
+  name: string;
+  address: string | null;
+  latitude: number;
+  longitude: number;
+  is_base_point: boolean | null;
+  created_at: string | null;
+}): PointWithId {
+  return {
+    id: row.id,
+    name: row.name,
+    address: row.address ?? "",
+    latitude: row.latitude,
+    longitude: row.longitude,
+    type: "get_on_off", // Default type since DB doesn't have this field
+    createdAt: row.created_at ?? new Date().toISOString(),
+  };
+}
+
+// GET /api/points - Get all stops/points
+export async function GET(request: NextRequest) {
+  try {
+    const params = parseQueryParams(request);
+    const isBasePoint = params.getBoolean("is_base_point");
+
+    let query = supabase
+      .from("stops")
+      .select("*")
+      .order("name", { ascending: true });
+
+    // Filter by is_base_point if provided
+    if (isBasePoint !== undefined) {
+      query = query.eq("is_base_point", isBasePoint);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      return handleSupabaseError(error);
+    }
+
+    const points: PointWithId[] = (data ?? []).map(dbRowToPoint);
+
+    const response: GetPointsResponse = {
+      success: true,
+      data: points,
+    };
+
+    return Response.json(response, { status: 200 });
+  } catch (error) {
+    console.error("Error fetching points:", error);
+
+    const response: GetPointsResponse = {
+      success: false,
+      error: "Internal server error",
+    };
+
+    return Response.json(response, { status: 500 });
+  }
+}
+
+// POST /api/points - Create a new stop/point
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
-    // Zodでバリデーション
+    // Validate with Zod schema
     const validationResult = pointSchema.safeParse(body);
 
     if (!validationResult.success) {
-      const errors = validationResult.error.issues.map((err: z.ZodIssue) => ({
+      const errors = validationResult.error.issues.map((err) => ({
         field: err.path.join("."),
         message: err.message,
       }));
@@ -27,24 +97,30 @@ export async function POST(request: NextRequest) {
         details: errors,
       };
 
-      return NextResponse.json(response, { status: 400 });
+      return Response.json(response, { status: 400 });
     }
 
-    const { name, address, latitude, longitude, type } = validationResult.data;
+    const { name, address, latitude, longitude } = validationResult.data;
 
-    // TODO: データベースに保存する処理を実装
-    // 現在はモックレスポンスを返す
-    const newPoint: PointWithId = {
-      id: Date.now().toString(),
-      name,
-      address,
-      latitude,
-      longitude,
-      type,
-      createdAt: new Date().toISOString(),
-    };
+    // Insert into Supabase stops table
+    const { data, error } = await supabase
+      .from("stops")
+      .insert({
+        name,
+        address,
+        latitude,
+        longitude,
+        is_base_point: true,
+      })
+      .select()
+      .single();
 
-    console.log("New point created:", newPoint);
+    if (error) {
+      console.error("Supabase insert error:", error);
+      return handleSupabaseError(error);
+    }
+
+    const newPoint = dbRowToPoint(data);
 
     const response: CreatePointResponse = {
       success: true,
@@ -52,7 +128,7 @@ export async function POST(request: NextRequest) {
       message: "ポイントが正常に追加されました",
     };
 
-    return NextResponse.json(response, { status: 201 });
+    return Response.json(response, { status: 201 });
   } catch (error) {
     console.error("Error creating point:", error);
 
@@ -61,47 +137,13 @@ export async function POST(request: NextRequest) {
         success: false,
         error: "Invalid JSON format",
       };
-      return NextResponse.json(response, { status: 400 });
+      return Response.json(response, { status: 400 });
     }
 
     const response: CreatePointResponse = {
       success: false,
       error: "Internal server error",
     };
-    return NextResponse.json(response, { status: 500 });
-  }
-}
-
-export async function GET() {
-  try {
-    // TODO: データベースからポイント一覧を取得する処理を実装
-    // 現在はモックデータを返す
-    const points: PointWithId[] = [
-      {
-        id: "1",
-        name: "福富支所前",
-        address: "広島県東広島市福富町久芳1545-1",
-        latitude: 34.540889,
-        longitude: 132.77544,
-        type: "get_on_off",
-        createdAt: new Date().toISOString(),
-      },
-    ];
-
-    const response: GetPointsResponse = {
-      success: true,
-      data: points,
-    };
-
-    return NextResponse.json(response, { status: 200 });
-  } catch (error) {
-    console.error("Error fetching points:", error);
-
-    const response: GetPointsResponse = {
-      success: false,
-      error: "Internal server error",
-    };
-
-    return NextResponse.json(response, { status: 500 });
+    return Response.json(response, { status: 500 });
   }
 }
