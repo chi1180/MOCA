@@ -82,12 +82,6 @@ export default function OperatorPage() {
       <dialog
         ref={dialog}
         className="backdrop:bg-black/50 rounded-lg shadow-xl p-0 border-0 m-auto max-w-lg"
-        style={{
-          position: "fixed",
-          top: "50%",
-          left: "50%",
-          transform: "translate(-50%, -50%)",
-        }}
       >
         <div className="bg-white p-8 rounded-lg">
           <div className="flex justify-between items-center mb-4">
