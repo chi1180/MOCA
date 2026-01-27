@@ -1,27 +1,27 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useMemo, useState, useEffect } from "react";
-
-interface PointAddProps {
-  onSubmit?: () => void;
-  onCancel?: () => void;
-}
+import { useEffect, useId, useMemo, useRef, useState } from "react";
+import toast from "react-hot-toast";
+import type { PointAddProps } from "@/types/components.point_add.types";
+import Button from "./Button";
 
 export default function PointAdd({ onSubmit, onCancel }: PointAddProps) {
-  const [formData, setFormData] = useState({
-    name: "",
-    address: "",
-    latitude: "",
-    longitude: "",
-    type: "乗降可",
-  });
+  const ElementIDs = {
+    name: useId(),
+    address: useId(),
+    latitude: useId(),
+    longitude: useId(),
+    type: useId(),
+  };
 
   const [markerPosition, setMarkerPosition] = useState<[number, number] | null>(
     null,
   );
 
   const [isMapReady, setIsMapReady] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
 
   // ダイアログが開かれた後にマップをレンダリング
   useEffect(() => {
@@ -31,6 +31,24 @@ export default function PointAdd({ onSubmit, onCancel }: PointAddProps) {
 
     return () => clearTimeout(timer);
   }, []);
+
+  // マップのサイズを再計算（Dialogが完全に開いた後）
+  useEffect(() => {
+    if (isMapReady) {
+      // 複数回リサイズイベントを発火して確実にマップをレンダリング
+      const timers = [
+        setTimeout(() => window.dispatchEvent(new Event("resize")), 100),
+        setTimeout(() => window.dispatchEvent(new Event("resize")), 300),
+        setTimeout(() => window.dispatchEvent(new Event("resize")), 500),
+      ];
+
+      return () => {
+        timers.forEach((timer) => {
+          clearTimeout(timer);
+        });
+      };
+    }
+  }, [isMapReady]);
 
   const FukutomiMap = useMemo(
     () =>
@@ -45,75 +63,109 @@ export default function PointAdd({ onSubmit, onCancel }: PointAddProps) {
     [],
   );
 
-  const handleMapClick = (lat: number, lng: number) => {
-    setMarkerPosition([lat, lng]);
-    setFormData((prev) => ({
-      ...prev,
-      latitude: lat.toFixed(6),
-      longitude: lng.toFixed(6),
-    }));
-  };
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
 
-  const handleSubmit = async () => {
+    if (isSubmitting) return;
+
+    const formData = new FormData(e.currentTarget);
+
+    const data = {
+      name: formData.get("name") as string,
+      address: formData.get("address") as string,
+      latitude: parseFloat(formData.get("latitude") as string),
+      longitude: parseFloat(formData.get("longitude") as string),
+      type: formData.get("type") as string,
+    };
+
+    // クライアント側でのバリデーション
+    if (!data.name || !data.address) {
+      toast.error("すべての必須項目を入力してください");
+      return;
+    }
+
+    if (Number.isNaN(data.latitude) || Number.isNaN(data.longitude)) {
+      toast.error("地図上をクリックして位置を指定してください");
+      return;
+    }
+
+    setIsSubmitting(true);
+    const loadingToast = toast.loading("ポイントを追加中...");
+
     try {
       const response = await fetch("/api/points", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          name: formData.name,
-          address: formData.address,
-          latitude: parseFloat(formData.latitude),
-          longitude: parseFloat(formData.longitude),
-          type: formData.type,
-        }),
+        body: JSON.stringify(data),
       });
+
+      const result = await response.json();
+
+      toast.dismiss(loadingToast);
 
       if (!response.ok) {
-        throw new Error("Failed to add point");
+        // バリデーションエラーの詳細を表示
+        if (result.details && Array.isArray(result.details)) {
+          result.details.forEach(
+            (detail: { field: string; message: string }) => {
+              toast.error(`${detail.field}: ${detail.message}`);
+            },
+          );
+        } else {
+          toast.error(result.error || "ポイントの追加に失敗しました");
+        }
+        return;
       }
 
-      // Reset form
-      setFormData({
-        name: "",
-        address: "",
-        latitude: "",
-        longitude: "",
-        type: "乗降可",
-      });
+      // 成功時
+      toast.success(result.message || "ポイントが正常に追加されました");
+
+      // フォームをリセット
+      if (formRef.current) {
+        formRef.current.reset();
+      }
       setMarkerPosition(null);
 
+      // 親コンポーネントのonSubmitを呼び出す（存在する場合）
       if (onSubmit) {
-        onSubmit();
+        onSubmit(e);
       }
     } catch (error) {
-      console.error("Error adding point:", error);
-      alert("ポイントの追加に失敗しました");
+      toast.dismiss(loadingToast);
+      console.error("Error submitting point:", error);
+      toast.error("ネットワークエラーが発生しました");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
+  const Styles = {
+    label: "block text-sm font-medium text-gray-700 mb-1",
+    input:
+      "w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring focus:ring-accent",
+  };
+  const Required = <span className="text-red-500">*</span>;
+
   return (
     <div className="w-full space-y-4">
-      {/* 説明文 */}
+      {/* Description */}
       <p className="text-sm text-gray-600">
         福富町に新しい乗降ポイントを追加します
       </p>
 
-      {/* 地図 */}
-      <div
-        className="w-full h-64 border border-gray-200 rounded-lg overflow-hidden relative"
-        style={{ minHeight: "256px" }}
-      >
+      {/* Map */}
+      <div className="w-full h-64 border border-gray-200 rounded-lg overflow-hidden relative">
         {isMapReady ? (
           <FukutomiMap
             className="w-full h-full"
-            onMapClick={handleMapClick}
+            onMapClick={(lat, lng) => setMarkerPosition([lat, lng])}
             markerPosition={markerPosition}
           />
         ) : (
           <div className="w-full h-full bg-slate-100 animate-pulse flex items-center justify-center">
-            <span className="text-gray-500">マップを読み込み中...</span>
+            <span className="text-gray-500">Loading map...</span>
           </div>
         )}
         <p className="absolute bottom-2 left-2 bg-white/90 px-2 py-1 rounded text-xs text-gray-600 shadow z-10">
@@ -121,114 +173,119 @@ export default function PointAdd({ onSubmit, onCancel }: PointAddProps) {
         </p>
       </div>
 
-      {/* フォーム */}
-      <div className="space-y-4">
-        {/* ポイント名 */}
+      {/* Form */}
+      <form ref={formRef} className="space-y-4" onSubmit={handleSubmit}>
+        {/* Point name */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            ポイント名 <span className="text-red-500">*</span>
+          <label className={Styles.label} htmlFor={ElementIDs.name}>
+            ポイント名 {Required}
           </label>
           <input
+            id={ElementIDs.name}
+            name="name"
             type="text"
-            placeholder="例: 福富支所前"
-            value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="例：福富支所前"
             required
+            className={Styles.input}
+            disabled={isSubmitting}
           />
         </div>
 
-        {/* 住所 */}
+        {/* Address */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            住所 <span className="text-red-500">*</span>
+          <label className={Styles.label} htmlFor={ElementIDs.address}>
+            住所 {Required}
           </label>
           <input
+            id={ElementIDs.address}
+            name="address"
             type="text"
-            placeholder="例: 広島県東広島市福富町久芳1545-1"
-            value={formData.address}
-            onChange={(e) =>
-              setFormData({ ...formData, address: e.target.value })
-            }
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="例：広島県東広島市福富町久芳1545-1"
+            defaultValue=""
             required
+            className={Styles.input}
+            disabled={isSubmitting}
           />
         </div>
 
-        {/* 緯度・経度 */}
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              緯度
+        {/* Latitude & Longitude */}
+        <div className="w-full flex gap-4">
+          {/* Latitude */}
+          <div className="w-full">
+            <label className={Styles.label} htmlFor={ElementIDs.latitude}>
+              緯度 {Required}
             </label>
             <input
-              type="text"
-              placeholder="34.540889"
-              value={formData.latitude}
-              onChange={(e) =>
-                setFormData({ ...formData, latitude: e.target.value })
-              }
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              id={ElementIDs.latitude}
+              name="latitude"
+              type="number"
+              step="any"
+              placeholder="地図上をクリックしてください"
               required
+              className={Styles.input}
+              value={markerPosition?.[0] ?? ""}
+              onChange={() => {}} // controlled componentとして動作させる
+              disabled={isSubmitting}
             />
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              経度
+
+          {/* Longitude */}
+          <div className="w-full">
+            <label className={Styles.label} htmlFor={ElementIDs.longitude}>
+              経度 {Required}
             </label>
             <input
-              type="text"
-              placeholder="132.775440"
-              value={formData.longitude}
-              onChange={(e) =>
-                setFormData({ ...formData, longitude: e.target.value })
-              }
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              id={ElementIDs.longitude}
+              name="longitude"
+              type="number"
+              step="any"
+              placeholder="地図上をクリックしてください"
               required
+              className={Styles.input}
+              value={markerPosition?.[1] ?? ""}
+              onChange={() => {}} // controlled componentとして動作させる
+              disabled={isSubmitting}
             />
           </div>
         </div>
 
-        {/* ポイント種別 */}
+        {/* Type */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            ポイント種別
+          <label className={Styles.label} htmlFor={ElementIDs.type}>
+            タイプ {Required}
           </label>
           <select
-            value={formData.type}
-            onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+            id={ElementIDs.type}
+            name="type"
+            defaultValue="get_on_off"
+            className={Styles.input}
+            required
+            disabled={isSubmitting}
           >
-            <option value="乗降可">乗降可</option>
-            <option value="乗車のみ">乗車のみ</option>
-            <option value="降車のみ">降車のみ</option>
+            <option value="get_on_off">乗下車可</option>
+            <option value="get_on">乗車可</option>
+            <option value="get_off">下車可</option>
           </select>
         </div>
-      </div>
 
-      {/* ボタン */}
-      <div className="flex justify-end gap-2 pt-4">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
-        >
-          キャンセル
-        </button>
-        <button
-          type="button"
-          onClick={handleSubmit}
-          disabled={
-            !formData.name ||
-            !formData.address ||
-            !formData.latitude ||
-            !formData.longitude
-          }
-          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
-        >
-          追加する
-        </button>
-      </div>
+        {/* ボタン */}
+        <div className="flex justify-end gap-2 pt-4">
+          <Button
+            type="button"
+            label="キャンセル"
+            onClick={onCancel}
+            filled
+            disabled={isSubmitting}
+          />
+          <button
+            type="submit"
+            className="px-4 bg-primary text-white rounded-md hover:brightness-90 border-primary border-2 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? "追加中..." : "追加する"}
+          </button>
+        </div>
+      </form>
     </div>
   );
 }

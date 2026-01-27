@@ -2,6 +2,7 @@
 
 import Button from "@/components/Button";
 import Card from "@/components/Card";
+import Dialog from "@/components/Dialog";
 import PointAdd from "@/components/PointAdd";
 import SubpageHeader from "@/components/SubpageHeader";
 import {
@@ -12,9 +13,10 @@ import {
   LucideZap,
 } from "lucide-react";
 import dynamic from "next/dynamic";
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 
 export default function OperatorPage() {
+  // Top cards component
   function topCards() {
     const CardData = [
       {
@@ -75,45 +77,33 @@ export default function OperatorPage() {
   );
 
   const [tab, setTab] = useState<"points" | "routes">("points");
-  const dialog = useRef<HTMLDialogElement>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  const handleDialogClose = () => {
+    setIsDialogOpen(false);
+  };
+
+  const handlePointAddSubmit = () => {
+    setIsDialogOpen(false);
+  };
+
+  const handlePointAddCancel = () => {
+    setIsDialogOpen(false);
+  };
 
   return (
     <div className="w-full h-full bg-background">
       {/* DIALOG */}
-      <dialog
-        ref={dialog}
-        className="backdrop:bg-black/50 rounded-lg shadow-xl p-0 border-0 m-auto max-w-2xl w-full"
-        onClose={() => {
-          // ダイアログが閉じられた時にマップをリセット
-          setTab("points");
-        }}
+      <Dialog
+        isOpen={isDialogOpen}
+        onClose={handleDialogClose}
+        title="新規ポイント追加"
       >
-        <div className="bg-white p-6 rounded-lg max-h-[90vh] overflow-y-auto">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold">新規ポイント追加</h2>
-            <button
-              type="button"
-              onClick={() => dialog.current?.close()}
-              className="text-gray-500 hover:text-gray-700 text-2xl leading-none"
-            >
-              ×
-            </button>
-          </div>
-          {isDialogOpen && (
-            <PointAdd
-              onSubmit={() => {
-                dialog.current?.close();
-                setIsDialogOpen(false);
-              }}
-              onCancel={() => {
-                dialog.current?.close();
-                setIsDialogOpen(false);
-              }}
-            />
-          )}
-        </div>
-      </dialog>
+        <PointAdd
+          onSubmit={handlePointAddSubmit}
+          onCancel={handlePointAddCancel}
+        />
+      </Dialog>
 
       {/* HEADER */}
       <SubpageHeader type="operator" />
@@ -165,10 +155,7 @@ export default function OperatorPage() {
                       label="新規追加"
                       type="button"
                       filled={false}
-                      onClick={() => {
-                        setIsDialogOpen(true);
-                        dialog.current?.showModal();
-                      }}
+                      onClick={() => setIsDialogOpen(true)}
                       icon={<LucidePlus />}
                     />
                   )

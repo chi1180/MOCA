@@ -1,18 +1,18 @@
 "use client";
 
+import { MAP_DATA } from "@/data/data";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+import { useEffect } from "react";
 import {
+  GeoJSON,
   MapContainer,
-  TileLayer,
   Marker,
   Popup,
-  GeoJSON,
-  useMapEvents,
+  TileLayer,
   useMap,
+  useMapEvents,
 } from "react-leaflet";
-import "leaflet/dist/leaflet.css";
-import L from "leaflet";
-import { MAP_DATA } from "@/data/data";
-import { useEffect } from "react";
 
 const iconUrl = "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png";
 const iconRetinaUrl =
@@ -54,12 +54,22 @@ function MapInvalidator() {
   const map = useMap();
 
   useEffect(() => {
-    // ダイアログが開かれた後、マップのサイズを再計算
+    // 初期レンダリング時にサイズを再計算
     const timer = setTimeout(() => {
       map.invalidateSize();
     }, 100);
 
-    return () => clearTimeout(timer);
+    // windowのresizeイベントを監視
+    const handleResize = () => {
+      map.invalidateSize();
+    };
+
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("resize", handleResize);
+    };
   }, [map]);
 
   return null;
@@ -94,25 +104,17 @@ export default function FukutomiMapInner({
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         maxZoom={19}
       />
-      <Marker position={MAP_DATA.center}>
-        <Popup>
-          Hiroshima AI Club <br /> Fukutomi Project.
-        </Popup>
-      </Marker>
 
       <GeoJSON data={MAP_DATA.polygon} />
 
-      {/* カスタムマーカー（地図クリック時に表示） */}
       {markerPosition && (
         <Marker position={markerPosition}>
           <Popup>選択された位置</Popup>
         </Marker>
       )}
 
-      {/* 地図クリックハンドラー */}
       {onMapClick && <MapClickHandler onMapClick={onMapClick} />}
 
-      {/* マップサイズ再計算 */}
       <MapInvalidator />
     </MapContainer>
   );
