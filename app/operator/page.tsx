@@ -2,7 +2,7 @@
 
 import Button from "@/components/Button";
 import Card from "@/components/Card";
-import Dialog from "@/components/Dialog";
+import Sidebar from "@/components/Sidebar";
 import PointAdd from "@/components/PointAdd";
 import PointList from "@/components/PointList";
 import SubpageHeader from "@/components/SubpageHeader";
@@ -27,11 +27,11 @@ export default function OperatorPage() {
   const [pointsError, setPointsError] = useState<string | null>(null);
   const [selectedPointId, setSelectedPointId] = useState<string | null>(null);
 
-  // Dialog state
+  // Sidebar state
   const [tab, setTab] = useState<"points" | "routes">("points");
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isAddSidebarOpen, setIsAddSidebarOpen] = useState(false);
+  const [isEditSidebarOpen, setIsEditSidebarOpen] = useState(false);
+  const [isDeleteSidebarOpen, setIsDeleteSidebarOpen] = useState(false);
   const [editingPoint, setEditingPoint] = useState<PointWithId | null>(null);
   const [deletingPoint, setDeletingPoint] = useState<PointWithId | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -73,54 +73,54 @@ export default function OperatorPage() {
     setSelectedPointId(point.id);
   }, []);
 
-  // Add dialog handlers
-  const handleAddDialogClose = () => {
-    setIsAddDialogOpen(false);
-  };
+  // Add sidebar handlers
+  const handleAddSidebarClose = useCallback(() => {
+    setIsAddSidebarOpen(false);
+  }, []);
 
-  const handlePointAddSubmit = () => {
-    setIsAddDialogOpen(false);
+  const handlePointAddSubmit = useCallback(() => {
+    setIsAddSidebarOpen(false);
     fetchPoints();
-  };
+  }, [fetchPoints]);
 
-  const handlePointAddCancel = () => {
-    setIsAddDialogOpen(false);
-  };
+  const handlePointAddCancel = useCallback(() => {
+    setIsAddSidebarOpen(false);
+  }, []);
 
-  // Edit dialog handlers
-  const handleEditDialogClose = () => {
-    setIsEditDialogOpen(false);
+  // Edit sidebar handlers
+  const handleEditSidebarClose = useCallback(() => {
+    setIsEditSidebarOpen(false);
     setEditingPoint(null);
-  };
+  }, []);
 
   const handlePointEdit = useCallback((point: PointWithId) => {
     setEditingPoint(point);
-    setIsEditDialogOpen(true);
+    setIsEditSidebarOpen(true);
   }, []);
 
-  const handlePointEditSubmit = () => {
-    setIsEditDialogOpen(false);
+  const handlePointEditSubmit = useCallback(() => {
+    setIsEditSidebarOpen(false);
     setEditingPoint(null);
     fetchPoints();
-  };
+  }, [fetchPoints]);
 
-  const handlePointEditCancel = () => {
-    setIsEditDialogOpen(false);
+  const handlePointEditCancel = useCallback(() => {
+    setIsEditSidebarOpen(false);
     setEditingPoint(null);
-  };
+  }, []);
 
-  // Delete dialog handlers
-  const handleDeleteDialogClose = () => {
-    setIsDeleteDialogOpen(false);
+  // Delete sidebar handlers
+  const handleDeleteSidebarClose = useCallback(() => {
+    setIsDeleteSidebarOpen(false);
     setDeletingPoint(null);
-  };
+  }, []);
 
   const handlePointDelete = useCallback((point: PointWithId) => {
     setDeletingPoint(point);
-    setIsDeleteDialogOpen(true);
+    setIsDeleteSidebarOpen(true);
   }, []);
 
-  const handleConfirmDelete = async () => {
+  const handleConfirmDelete = useCallback(async () => {
     if (!deletingPoint) return;
 
     setIsDeleting(true);
@@ -146,7 +146,7 @@ export default function OperatorPage() {
         setSelectedPointId(null);
       }
 
-      setIsDeleteDialogOpen(false);
+      setIsDeleteSidebarOpen(false);
       setDeletingPoint(null);
       fetchPoints();
     } catch (error) {
@@ -156,12 +156,12 @@ export default function OperatorPage() {
     } finally {
       setIsDeleting(false);
     }
-  };
+  }, [deletingPoint, selectedPointId, fetchPoints]);
 
-  const handleCancelDelete = () => {
-    setIsDeleteDialogOpen(false);
+  const handleCancelDelete = useCallback(() => {
+    setIsDeleteSidebarOpen(false);
     setDeletingPoint(null);
-  };
+  }, []);
 
   // Dynamic import of map component (no SSR)
   const FukutomiMap = useMemo(
@@ -226,24 +226,24 @@ export default function OperatorPage() {
 
   return (
     <div className="w-full h-full bg-background">
-      {/* ADD DIALOG */}
-      <Dialog
-        isOpen={isAddDialogOpen}
-        onClose={handleAddDialogClose}
+      {/* ADD SIDEBAR */}
+      <Sidebar
+        isOpen={isAddSidebarOpen}
+        onClose={handleAddSidebarClose}
         title="新規ポイント追加"
       >
         <PointAdd
           mode="create"
           onSubmit={handlePointAddSubmit}
           onCancel={handlePointAddCancel}
-          isOpen={isAddDialogOpen}
+          isOpen={isAddSidebarOpen}
         />
-      </Dialog>
+      </Sidebar>
 
-      {/* EDIT DIALOG */}
-      <Dialog
-        isOpen={isEditDialogOpen}
-        onClose={handleEditDialogClose}
+      {/* EDIT SIDEBAR */}
+      <Sidebar
+        isOpen={isEditSidebarOpen}
+        onClose={handleEditSidebarClose}
         title="ポイント編集"
       >
         <PointAdd
@@ -251,14 +251,14 @@ export default function OperatorPage() {
           editPoint={editingPoint}
           onSubmit={handlePointEditSubmit}
           onCancel={handlePointEditCancel}
-          isOpen={isEditDialogOpen}
+          isOpen={isEditSidebarOpen}
         />
-      </Dialog>
+      </Sidebar>
 
-      {/* DELETE CONFIRMATION DIALOG */}
-      <Dialog
-        isOpen={isDeleteDialogOpen}
-        onClose={handleDeleteDialogClose}
+      {/* DELETE CONFIRMATION SIDEBAR */}
+      <Sidebar
+        isOpen={isDeleteSidebarOpen}
+        onClose={handleDeleteSidebarClose}
         title="ポイント削除の確認"
       >
         <div className="space-y-4">
@@ -302,7 +302,7 @@ export default function OperatorPage() {
             </button>
           </div>
         </div>
-      </Dialog>
+      </Sidebar>
 
       {/* HEADER */}
       <SubpageHeader type="operator" />
@@ -376,7 +376,7 @@ export default function OperatorPage() {
                         label="新規追加"
                         type="button"
                         filled={false}
-                        onClick={() => setIsAddDialogOpen(true)}
+                        onClick={() => setIsAddSidebarOpen(true)}
                         icon={<LucidePlus />}
                       />
                     </div>

@@ -13,3 +13,18 @@ export const MAP_DATA = {
     [34.57954186, 132.81575052],
   ] as LatLngBoundsExpression,
 };
+
+export const RECOMMENDED_TAGS = [
+  "病院",
+  "駅",
+  "中央",
+  "ショッピングモール",
+  "図書館",
+  "公園",
+  "学校",
+  "郵便局",
+  "銀行",
+  "スーパー",
+  "市役所",
+  "火車停",
+];

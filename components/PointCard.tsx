@@ -9,29 +9,57 @@ interface PointCardProps {
   onDelete: (point: PointWithId) => void;
 }
 
-// Get label for point type
-function getTypeLabel(type: string): string {
-  switch (type) {
+// Get label for ability
+function getAbilityLabel(ability: string): string {
+  switch (ability) {
     case "get_on_off":
-      return "乗降可";
+      return "乗下車可";
     case "get_on":
       return "乗車のみ";
     case "get_off":
-      return "降車のみ";
+      return "下車のみ";
     default:
-      return type;
+      return ability;
   }
 }
 
-// Get color for point type
-function getTypeColor(type: string): string {
-  switch (type) {
+// Get color for ability
+function getAbilityColor(ability: string): string {
+  switch (ability) {
     case "get_on_off":
       return "bg-blue-100 text-blue-800";
     case "get_on":
       return "bg-green-100 text-green-800";
     case "get_off":
       return "bg-orange-100 text-orange-800";
+    default:
+      return "bg-gray-100 text-gray-800";
+  }
+}
+
+// Get label for type
+function getTypeLabel(type: string): string {
+  switch (type) {
+    case "departure":
+      return "出発地";
+    case "arrival":
+      return "到着地";
+    case "traveling":
+      return "経由地";
+    default:
+      return type;
+  }
+}
+
+// Get color for type
+function getTypeColor(type: string): string {
+  switch (type) {
+    case "departure":
+      return "bg-purple-100 text-purple-800";
+    case "arrival":
+      return "bg-pink-100 text-pink-800";
+    case "traveling":
+      return "bg-cyan-100 text-cyan-800";
     default:
       return "bg-gray-100 text-gray-800";
   }
@@ -83,10 +111,18 @@ export default function PointCard({
 
         {/* Content */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
             <h3 className="font-semibold text-gray-900 truncate">
               {point.name}
             </h3>
+            <span
+              className={`
+                text-xs px-2 py-0.5 rounded-full font-medium shrink-0
+                ${getAbilityColor(point.ability)}
+              `}
+            >
+              {getAbilityLabel(point.ability)}
+            </span>
             <span
               className={`
                 text-xs px-2 py-0.5 rounded-full font-medium shrink-0
@@ -98,6 +134,20 @@ export default function PointCard({
           </div>
 
           <p className="text-sm text-gray-600 truncate">{point.address}</p>
+
+          {/* Tags */}
+          {point.tags && point.tags.length > 0 && (
+            <div className="flex items-center gap-1 mt-2 flex-wrap">
+              {point.tags.map((tag) => (
+                <span
+                  key={tag}
+                  className="text-xs px-2 py-1 bg-gray-200 text-gray-700 rounded-full"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
 
           <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
             <span>緯度: {point.latitude.toFixed(6)}</span>

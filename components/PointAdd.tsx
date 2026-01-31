@@ -5,6 +5,7 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import type { PointAddProps } from "@/types/components.point_add.types";
 import type { FukutomiMapRef } from "@/types/components.map.types";
+import { RECOMMENDED_TAGS } from "@/data/data";
 import Button from "./Button";
 
 export default function PointAdd({
@@ -21,7 +22,9 @@ export default function PointAdd({
     address: useId(),
     latitude: useId(),
     longitude: useId(),
+    ability: useId(),
     type: useId(),
+    tags: useId(),
   };
 
   const [markerPosition, setMarkerPosition] = useState<[number, number] | null>(
@@ -30,13 +33,17 @@ export default function PointAdd({
   const [formData, setFormData] = useState({
     name: "",
     address: "",
-    type: "get_on_off",
+    ability: "get_on_off",
+    type: "traveling",
+    tags: [] as string[],
   });
 
   const [isMapReady, setIsMapReady] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   const mapRef = useRef<FukutomiMapRef | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const tagifyRef = useRef<unknown>(null);
   const [mapKey, setMapKey] = useState(0);
 
   // Initialize form data when editing
@@ -45,7 +52,9 @@ export default function PointAdd({
       setFormData({
         name: editPoint.name,
         address: editPoint.address,
+        ability: editPoint.ability,
         type: editPoint.type,
+        tags: editPoint.tags,
       });
       setMarkerPosition([editPoint.latitude, editPoint.longitude]);
     } else if (isOpen && !isEditMode) {
@@ -53,11 +62,75 @@ export default function PointAdd({
       setFormData({
         name: "",
         address: "",
-        type: "get_on_off",
+        ability: "get_on_off",
+        type: "traveling",
+        tags: [],
       });
       setMarkerPosition(null);
     }
   }, [isOpen, isEditMode, editPoint]);
+
+  // Initialize tagify when dialog opens and tags input is available
+  useEffect(() => {
+    if (isOpen && typeof window !== "undefined") {
+      // Dynamic import of Tagify
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      import("@yaireo/tagify").then((TagifyModule: unknown) => {
+        const TagifyClass = (TagifyModule as { default: unknown }).default;
+        const tagInput = document.getElementById(
+          ElementIDs.tags,
+        ) as HTMLInputElement;
+
+        if (tagInput && !tagifyRef.current) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const tagify = new (TagifyClass as any)({
+            whitelist: RECOMMENDED_TAGS,
+            dropdown: {
+              maxItems: 20,
+              classname: "tags-look",
+              enabled: 0,
+              closeOnSelect: false,
+            },
+            maxTags: 10,
+            editTags: true,
+          });
+
+          tagify.attach(tagInput);
+
+          // Initialize with existing tags
+          if (formData.tags && formData.tags.length > 0) {
+            tagify.removeAllTags();
+            tagify.addTags(formData.tags);
+          }
+
+          tagifyRef.current = tagify;
+
+          // Update formData when tags change
+          tagInput.addEventListener("change", (e: Event) => {
+            const target = e.target as HTMLInputElement;
+            try {
+              const tags = JSON.parse(target.value || "[]") as Array<{
+                value: string;
+              }>;
+              setFormData((prev) => ({
+                ...prev,
+                tags: tags.map((tag) => tag.value),
+              }));
+            } catch {
+              // Handle JSON parse error
+            }
+          });
+        }
+      });
+    }
+
+    return () => {
+      if (tagifyRef.current) {
+        (tagifyRef.current as unknown as { destroy: () => void }).destroy();
+        tagifyRef.current = null;
+      }
+    };
+  }, [isOpen, ElementIDs.tags, formData.tags]);
 
   // Initialize map when dialog opens
   useEffect(() => {
@@ -129,7 +202,9 @@ export default function PointAdd({
       address: formData.address,
       latitude: markerPosition?.[0] ?? 0,
       longitude: markerPosition?.[1] ?? 0,
+      ability: formData.ability,
       type: formData.type,
+      tags: formData.tags,
     };
 
     // Client-side validation
@@ -197,7 +272,9 @@ export default function PointAdd({
       setFormData({
         name: "",
         address: "",
-        type: "get_on_off",
+        ability: "get_on_off",
+        type: "traveling",
+        tags: [],
       });
       setMarkerPosition(null);
 
@@ -221,6 +298,32 @@ export default function PointAdd({
       ...prev,
       [name]: value,
     }));
+  };
+
+  const getAbilityLabel = (ability: string): string => {
+    switch (ability) {
+      case "get_on_off":
+        return "乗下車可";
+      case "get_on":
+        return "乗車のみ";
+      case "get_off":
+        return "下車のみ";
+      default:
+        return ability;
+    }
+  };
+
+  const getTypeLabel = (type: string): string => {
+    switch (type) {
+      case "departure":
+        return "出発地";
+      case "arrival":
+        return "到着地";
+      case "traveling":
+        return "経由地";
+      default:
+        return type;
+    }
   };
 
   const Styles = {
@@ -338,10 +441,30 @@ export default function PointAdd({
           </div>
         </div>
 
+        {/* Ability */}
+        <div>
+          <label className={Styles.label} htmlFor={ElementIDs.ability}>
+            乗下車可能性 {Required}
+          </label>
+          <select
+            id={ElementIDs.ability}
+            name="ability"
+            className={Styles.input}
+            required
+            disabled={isSubmitting}
+            value={formData.ability}
+            onChange={handleInputChange}
+          >
+            <option value="get_on_off">{getAbilityLabel("get_on_off")}</option>
+            <option value="get_on">{getAbilityLabel("get_on")}</option>
+            <option value="get_off">{getAbilityLabel("get_off")}</option>
+          </select>
+        </div>
+
         {/* Type */}
         <div>
           <label className={Styles.label} htmlFor={ElementIDs.type}>
-            タイプ {Required}
+            ポイントタイプ {Required}
           </label>
           <select
             id={ElementIDs.type}
@@ -352,10 +475,27 @@ export default function PointAdd({
             value={formData.type}
             onChange={handleInputChange}
           >
-            <option value="get_on_off">乗下車可</option>
-            <option value="get_on">乗車可</option>
-            <option value="get_off">下車可</option>
+            <option value="departure">{getTypeLabel("departure")}</option>
+            <option value="arrival">{getTypeLabel("arrival")}</option>
+            <option value="traveling">{getTypeLabel("traveling")}</option>
           </select>
+        </div>
+
+        {/* Tags */}
+        <div>
+          <label className={Styles.label} htmlFor={ElementIDs.tags}>
+            タグ
+          </label>
+          <input
+            id={ElementIDs.tags}
+            type="text"
+            placeholder="推奨タグから選択または自由に入力（複数選択可能）"
+            className={`${Styles.input} tagify`}
+            disabled={isSubmitting}
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            推奨: {RECOMMENDED_TAGS.join("、")}
+          </p>
         </div>
 
         {/* Buttons */}
