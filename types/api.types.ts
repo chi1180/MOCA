@@ -36,6 +36,8 @@ export type ReservationStatus =
   | "completed"
   | "cancelled";
 export type RouteStatus = "planned" | "in_progress" | "completed" | "cancelled";
+export type StopAbility = "get_on" | "get_off" | "get_on_off";
+export type StopType = "departure" | "arrival" | "traveling";
 
 // =============================================
 // JSONB Types for Route and Prediction data
@@ -109,7 +111,15 @@ export const stopCreateSchema = z.object({
   latitude: z.number().min(-90).max(90),
   longitude: z.number().min(-180).max(180),
   address: z.string().optional().nullable(),
-  is_base_point: z.boolean().optional().default(true),
+  ability: z
+    .enum(["get_on", "get_off", "get_on_off"])
+    .optional()
+    .default("get_on_off"),
+  type: z
+    .enum(["departure", "arrival", "traveling"])
+    .optional()
+    .default("traveling"),
+  tags: z.array(z.string()).optional().default([]),
 });
 
 export const stopUpdateSchema = stopCreateSchema.partial();

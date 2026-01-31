@@ -1,10 +1,9 @@
 import type { NextRequest } from "next/server";
 import { supabase } from "@/lib/supabase";
 import {
-  successResponse,
-  errorResponse,
   handleSupabaseError,
   isValidUUID,
+  errorResponse,
 } from "@/lib/api-helpers";
 import { pointSchema } from "@/types/api.points.types";
 import type {
@@ -23,9 +22,10 @@ function dbRowToPoint(row: {
   address: string | null;
   latitude: number;
   longitude: number;
-  is_base_point: boolean | null;
+  ability: string;
+  type: string;
+  tags: string[];
   created_at: string | null;
-  stop_type: string;
 }): PointWithId {
   return {
     id: row.id,
@@ -33,13 +33,15 @@ function dbRowToPoint(row: {
     address: row.address ?? "",
     latitude: row.latitude,
     longitude: row.longitude,
-    type: row.stop_type as "get_on" | "get_off" | "get_on_off",
+    ability: row.ability as "get_on" | "get_off" | "get_on_off",
+    type: row.type as "departure" | "arrival" | "traveling",
+    tags: row.tags ?? [],
     createdAt: row.created_at ?? new Date().toISOString(),
   };
 }
 
 // GET /api/points/[id] - Get a single point by ID
-export async function GET(request: NextRequest, { params }: RouteParams) {
+export async function GET(_request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params;
 
@@ -103,7 +105,8 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       return Response.json(response, { status: 400 });
     }
 
-    const { name, address, latitude, longitude, type } = validationResult.data;
+    const { name, address, latitude, longitude, ability, type, tags } =
+      validationResult.data;
 
     const { data, error } = await supabase
       .from("stops")
@@ -112,7 +115,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         address,
         latitude,
         longitude,
-        stop_type: type,
+        ability,
+        type,
+        tags,
       })
       .eq("id", id)
       .select()
@@ -150,7 +155,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 }
 
 // DELETE /api/points/[id] - Delete a point
-export async function DELETE(request: NextRequest, { params }: RouteParams) {
+export async function DELETE(_request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params;
 

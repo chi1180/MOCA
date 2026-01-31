@@ -13,13 +13,16 @@ import { stopCreateSchema } from "@/types/api.types";
 export async function GET(request: NextRequest) {
   try {
     const params = parseQueryParams(request);
-    const isBasePoint = params.getBoolean("is_base_point");
+    const type = params.get("type");
 
-    let query = supabase.from("stops").select("*").order("name", { ascending: true });
+    let query = supabase
+      .from("stops")
+      .select("*")
+      .order("name", { ascending: true });
 
-    // Filter by is_base_point if provided
-    if (isBasePoint !== undefined) {
-      query = query.eq("is_base_point", isBasePoint);
+    // Filter by type if provided
+    if (type !== undefined && type !== null) {
+      query = query.eq("type", type);
     }
 
     const { data, error } = await query;

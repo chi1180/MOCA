@@ -12,7 +12,15 @@ export const pointSchema = z.object({
     .number()
     .min(-180, "経度は-180以上である必要があります")
     .max(180, "経度は180以下である必要があります"),
-  type: z.enum(["get_on_off", "get_on", "get_off"]).default("get_on_off"),
+  ability: z
+    .enum(["get_on_off", "get_on", "get_off"])
+    .optional()
+    .default("get_on_off"),
+  type: z
+    .enum(["departure", "arrival", "traveling"])
+    .optional()
+    .default("traveling"),
+  tags: z.array(z.string()).optional().default([]),
 });
 
 // スキーマから型を推論

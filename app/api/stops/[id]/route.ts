@@ -14,7 +14,7 @@ interface RouteParams {
 }
 
 // GET /api/stops/[id] - Get a single stop by ID
-export async function GET(request: NextRequest, { params }: RouteParams) {
+export async function GET(_request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params;
 
@@ -43,7 +43,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 }
 
 // PUT /api/stops/[id] - Update a stop
-export async function PUT(request: NextRequest, { params }: RouteParams) {
+export async function PUT(_request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params;
 
@@ -51,7 +51,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       return errorResponse("Invalid stop ID format", 400);
     }
 
-    const validation = await validateBody(request, stopUpdateSchema);
+    const validation = await validateBody(_request, stopUpdateSchema);
 
     if (!validation.success) {
       return validation.error;
@@ -79,7 +79,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 }
 
 // DELETE /api/stops/[id] - Delete a stop
-export async function DELETE(request: NextRequest, { params }: RouteParams) {
+export async function DELETE(_request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params;
 
