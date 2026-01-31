@@ -206,7 +206,7 @@ export default function OperatorPage() {
         value: points.length.toString(),
       },
       {
-        description: "運行ルート",
+        description: "今日の運行ルート",
         color: "#9810fa",
         icon: LucideRoute,
         value: "5",
