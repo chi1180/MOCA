@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { LucideLoader2, LucideMapPinOff } from "lucide-react";
 import type { PointWithId } from "@/types/api.points.types";
 import PointCard from "./PointCard";
@@ -23,6 +24,19 @@ export default function PointList({
   isLoading = false,
   error = null,
 }: PointListProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const selectedCardRef = useRef<HTMLDivElement>(null);
+
+  // selectedPointIdが変わった際にスクロール
+  useEffect(() => {
+    if (selectedPointId && selectedCardRef.current && containerRef.current) {
+      selectedCardRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+      });
+    }
+  }, [selectedPointId]);
+
   // Loading state
   if (isLoading) {
     return (
@@ -59,16 +73,24 @@ export default function PointList({
 
   // Points list
   return (
-    <div className="flex flex-col gap-3 max-h-[400px] overflow-y-auto pr-2">
+    <div
+      ref={containerRef}
+      className="flex flex-col gap-3 max-h-[400px] overflow-y-auto pr-2"
+    >
       {points.map((point) => (
-        <PointCard
+        <div
           key={point.id}
-          point={point}
-          isSelected={selectedPointId === point.id}
-          onClick={() => onPointSelect(point)}
-          onEdit={onPointEdit}
-          onDelete={onPointDelete}
-        />
+          className="p-0.5"
+          ref={selectedPointId === point.id ? selectedCardRef : null}
+        >
+          <PointCard
+            point={point}
+            isSelected={selectedPointId === point.id}
+            onClick={() => onPointSelect(point)}
+            onEdit={onPointEdit}
+            onDelete={onPointDelete}
+          />
+        </div>
       ))}
     </div>
   );
