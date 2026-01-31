@@ -30,9 +30,7 @@ export default function Sidebar({
     };
   }, [isOpen]);
 
-  const handleBackdropClick = (
-    e: React.MouseEvent<HTMLDivElement>
-  ) => {
+  const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.target === e.currentTarget) {
       onClose?.();
     }
@@ -47,7 +45,9 @@ export default function Sidebar({
       {/* Backdrop */}
       <div
         className={`fixed inset-0 bg-black/50 transition-opacity duration-300 ${
-          isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+          isOpen
+            ? "opacity-100 pointer-events-auto"
+            : "opacity-0 pointer-events-none"
         }`}
         onClick={handleBackdropClick}
         aria-hidden="true"
@@ -58,12 +58,12 @@ export default function Sidebar({
         ref={sidebarRef}
         className={`fixed top-0 right-0 h-full w-full max-w-2xl bg-white shadow-xl transition-transform duration-300 ease-in-out transform ${
           isOpen ? "translate-x-0" : "translate-x-full"
-        } z-50 overflow-y-auto`}
+        } z-51 overflow-y-auto`}
       >
         <div className="p-6 h-full flex flex-col">
           {/* Header */}
-          <div className="flex justify-between items-center mb-6 pb-4 border-b">
-            {title && <h2 className="text-2xl font-bold">{title}</h2>}
+          <div className="flex justify-between items-center mb-6 pb-4 border-b-2 border-primary">
+            {title && <h2 className="text-2xl font-medium">{title}</h2>}
             <button
               type="button"
               onClick={handleClose}
@@ -75,9 +75,7 @@ export default function Sidebar({
           </div>
 
           {/* Content */}
-          <div className="flex-1 overflow-y-auto">
-            {children}
-          </div>
+          <div className="flex-1 overflow-y-auto pr-2">{children}</div>
         </div>
       </div>
     </>
