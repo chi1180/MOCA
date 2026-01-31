@@ -43,7 +43,7 @@ export default function PointAdd({
   const formRef = useRef<HTMLFormElement>(null);
   const mapRef = useRef<FukutomiMapRef | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const tagifyRef = useRef<unknown>(null);
+  const tagifyRef = useRef<any>(null);
   const [mapKey, setMapKey] = useState(0);
 
   // Initialize form data when editing
@@ -70,69 +70,112 @@ export default function PointAdd({
     }
   }, [isOpen, isEditMode, editPoint]);
 
-  // Initialize tagify when dialog opens and tags input is available
+  // Initialize tagify when sidebar opens and tags input is available
   useEffect(() => {
-    if (isOpen && typeof window !== "undefined") {
-      // Dynamic import of Tagify
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      import("@yaireo/tagify").then((TagifyModule: unknown) => {
-        const TagifyClass = (TagifyModule as { default: unknown }).default;
+    if (!isOpen || typeof window === "undefined") return;
+
+    // Use a small delay to ensure DOM is ready
+    const initTimer = setTimeout(async () => {
+      try {
         const tagInput = document.getElementById(
           ElementIDs.tags,
         ) as HTMLInputElement;
 
-        if (tagInput && !tagifyRef.current) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const tagify = new (TagifyClass as any)({
-            whitelist: RECOMMENDED_TAGS,
-            dropdown: {
-              maxItems: 20,
-              classname: "tags-look",
-              enabled: 0,
-              closeOnSelect: false,
-            },
-            maxTags: 10,
-            editTags: true,
-          });
+        if (!tagInput) return;
 
-          tagify.attach(tagInput);
-
-          // Initialize with existing tags
-          if (formData.tags && formData.tags.length > 0) {
-            tagify.removeAllTags();
-            tagify.addTags(formData.tags);
+        // Destroy existing tagify instance
+        if (tagifyRef.current) {
+          try {
+            tagifyRef.current.destroy();
+          } catch {
+            // Ignore errors during cleanup
           }
-
-          tagifyRef.current = tagify;
-
-          // Update formData when tags change
-          tagInput.addEventListener("change", (e: Event) => {
-            const target = e.target as HTMLInputElement;
-            try {
-              const tags = JSON.parse(target.value || "[]") as Array<{
-                value: string;
-              }>;
-              setFormData((prev) => ({
-                ...prev,
-                tags: tags.map((tag) => tag.value),
-              }));
-            } catch {
-              // Handle JSON parse error
-            }
-          });
+          tagifyRef.current = null;
         }
-      });
-    }
+
+        // Dynamic import of Tagify
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const TagifyModule = await import("@yaireo/tagify");
+        const TagifyClass = TagifyModule.default;
+
+        // Create new instance
+        const tagify = new TagifyClass({
+          whitelist: RECOMMENDED_TAGS,
+          dropdown: {
+            maxItems: 20,
+            classname: "tags-look",
+            enabled: 0,
+            closeOnSelect: false,
+          },
+          maxTags: 10,
+          editTags: true,
+          dblClickDelete: true,
+        });
+
+        // Attach to input
+        tagify.attach(tagInput);
+
+        // Initialize with existing tags
+        if (formData.tags && formData.tags.length > 0) {
+          tagify.removeAllTags();
+          tagify.addTags(formData.tags);
+        }
+
+        // Store reference
+        tagifyRef.current = tagify;
+
+        // Remove any existing change event listeners first
+        tagInput.removeEventListener("change", handleTagChange);
+
+        // Add change event listener
+        tagInput.addEventListener("change", handleTagChange);
+      } catch (error) {
+        console.error("Error initializing Tagify:", error);
+      }
+    }, 100);
 
     return () => {
+      clearTimeout(initTimer);
+    };
+  }, [isOpen, ElementIDs.tags]);
+
+  // Handle tag change event
+  const handleTagChange = (e: Event) => {
+    const target = e.target as HTMLInputElement;
+    try {
+      const tags = JSON.parse(target.value || "[]") as Array<{
+        value: string;
+      }>;
+      setFormData((prev) => ({
+        ...prev,
+        tags: tags.map((tag) => tag.value),
+      }));
+    } catch {
+      // Handle JSON parse error silently
+    }
+  };
+
+  // Cleanup tagify on unmount or when sidebar closes
+  useEffect(() => {
+    return () => {
       if (tagifyRef.current) {
-        (tagifyRef.current as unknown as { destroy: () => void }).destroy();
+        try {
+          const tagInput = document.getElementById(
+            ElementIDs.tags,
+          ) as HTMLInputElement;
+          if (tagInput) {
+            tagInput.removeEventListener("change", handleTagChange);
+          }
+          tagifyRef.current.destroy();
+        } catch {
+          // Ignore errors during cleanup
+        }
         tagifyRef.current = null;
       }
     };
-  }, [isOpen, ElementIDs.tags, formData.tags]);
+  }, [ElementIDs.tags]);
 
-  // Initialize map when dialog opens
+  // Initialize map when sidebar opens
   useEffect(() => {
     if (isOpen) {
       setIsMapReady(false);
@@ -151,7 +194,7 @@ export default function PointAdd({
     }
   }, [isOpen, isEditMode]);
 
-  // Recalculate map size after dialog animation
+  // Recalculate map size after sidebar animation
   useEffect(() => {
     if (isMapReady && mapRef.current) {
       const timers = [
@@ -509,7 +552,7 @@ export default function PointAdd({
           />
           <button
             type="submit"
-            className="px-4 bg-primary text-white rounded-md hover:brightness-90 border-primary border-2 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-2 bg-primary text-white rounded-md hover:brightness-90 border-primary border-2 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={isSubmitting}
           >
             {isSubmitting

@@ -2,6 +2,7 @@
 
 import Button from "@/components/Button";
 import Card from "@/components/Card";
+import Dialog from "@/components/Dialog";
 import Sidebar from "@/components/Sidebar";
 import PointAdd from "@/components/PointAdd";
 import PointList from "@/components/PointList";
@@ -31,8 +32,10 @@ export default function OperatorPage() {
   const [tab, setTab] = useState<"points" | "routes">("points");
   const [isAddSidebarOpen, setIsAddSidebarOpen] = useState(false);
   const [isEditSidebarOpen, setIsEditSidebarOpen] = useState(false);
-  const [isDeleteSidebarOpen, setIsDeleteSidebarOpen] = useState(false);
   const [editingPoint, setEditingPoint] = useState<PointWithId | null>(null);
+
+  // Dialog state
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [deletingPoint, setDeletingPoint] = useState<PointWithId | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -73,7 +76,11 @@ export default function OperatorPage() {
     setSelectedPointId(point.id);
   }, []);
 
-  // Add sidebar handlers
+  // ========== ADD SIDEBAR HANDLERS ==========
+  const handleAddSidebarOpen = useCallback(() => {
+    setIsAddSidebarOpen(true);
+  }, []);
+
   const handleAddSidebarClose = useCallback(() => {
     setIsAddSidebarOpen(false);
   }, []);
@@ -87,37 +94,45 @@ export default function OperatorPage() {
     setIsAddSidebarOpen(false);
   }, []);
 
-  // Edit sidebar handlers
-  const handleEditSidebarClose = useCallback(() => {
-    setIsEditSidebarOpen(false);
-    setEditingPoint(null);
-  }, []);
-
-  const handlePointEdit = useCallback((point: PointWithId) => {
+  // ========== EDIT SIDEBAR HANDLERS ==========
+  const handleEditSidebarOpen = useCallback((point: PointWithId) => {
     setEditingPoint(point);
     setIsEditSidebarOpen(true);
   }, []);
 
+  const handleEditSidebarClose = useCallback(() => {
+    setIsEditSidebarOpen(false);
+    setTimeout(() => {
+      setEditingPoint(null);
+    }, 300);
+  }, []);
+
   const handlePointEditSubmit = useCallback(() => {
     setIsEditSidebarOpen(false);
-    setEditingPoint(null);
-    fetchPoints();
+    setTimeout(() => {
+      setEditingPoint(null);
+      fetchPoints();
+    }, 300);
   }, [fetchPoints]);
 
   const handlePointEditCancel = useCallback(() => {
     setIsEditSidebarOpen(false);
-    setEditingPoint(null);
+    setTimeout(() => {
+      setEditingPoint(null);
+    }, 300);
   }, []);
 
-  // Delete sidebar handlers
-  const handleDeleteSidebarClose = useCallback(() => {
-    setIsDeleteSidebarOpen(false);
-    setDeletingPoint(null);
-  }, []);
-
-  const handlePointDelete = useCallback((point: PointWithId) => {
+  // ========== DELETE DIALOG HANDLERS ==========
+  const handleDeleteDialogOpen = useCallback((point: PointWithId) => {
     setDeletingPoint(point);
-    setIsDeleteSidebarOpen(true);
+    setIsDeleteDialogOpen(true);
+  }, []);
+
+  const handleDeleteDialogClose = useCallback(() => {
+    setIsDeleteDialogOpen(false);
+    setTimeout(() => {
+      setDeletingPoint(null);
+    }, 300);
   }, []);
 
   const handleConfirmDelete = useCallback(async () => {
@@ -146,9 +161,11 @@ export default function OperatorPage() {
         setSelectedPointId(null);
       }
 
-      setIsDeleteSidebarOpen(false);
-      setDeletingPoint(null);
-      fetchPoints();
+      setIsDeleteDialogOpen(false);
+      setTimeout(() => {
+        setDeletingPoint(null);
+        fetchPoints();
+      }, 300);
     } catch (error) {
       toast.dismiss(loadingToast);
       console.error("Error deleting point:", error);
@@ -159,8 +176,10 @@ export default function OperatorPage() {
   }, [deletingPoint, selectedPointId, fetchPoints]);
 
   const handleCancelDelete = useCallback(() => {
-    setIsDeleteSidebarOpen(false);
-    setDeletingPoint(null);
+    setIsDeleteDialogOpen(false);
+    setTimeout(() => {
+      setDeletingPoint(null);
+    }, 300);
   }, []);
 
   // Dynamic import of map component (no SSR)
@@ -246,19 +265,21 @@ export default function OperatorPage() {
         onClose={handleEditSidebarClose}
         title="ポイント編集"
       >
-        <PointAdd
-          mode="edit"
-          editPoint={editingPoint}
-          onSubmit={handlePointEditSubmit}
-          onCancel={handlePointEditCancel}
-          isOpen={isEditSidebarOpen}
-        />
+        {editingPoint && (
+          <PointAdd
+            mode="edit"
+            editPoint={editingPoint}
+            onSubmit={handlePointEditSubmit}
+            onCancel={handlePointEditCancel}
+            isOpen={isEditSidebarOpen}
+          />
+        )}
       </Sidebar>
 
-      {/* DELETE CONFIRMATION SIDEBAR */}
-      <Sidebar
-        isOpen={isDeleteSidebarOpen}
-        onClose={handleDeleteSidebarClose}
+      {/* DELETE CONFIRMATION DIALOG */}
+      <Dialog
+        isOpen={isDeleteDialogOpen}
+        onClose={handleDeleteDialogClose}
         title="ポイント削除の確認"
       >
         <div className="space-y-4">
@@ -302,7 +323,7 @@ export default function OperatorPage() {
             </button>
           </div>
         </div>
-      </Sidebar>
+      </Dialog>
 
       {/* HEADER */}
       <SubpageHeader type="operator" />
@@ -376,7 +397,7 @@ export default function OperatorPage() {
                         label="新規追加"
                         type="button"
                         filled={false}
-                        onClick={() => setIsAddSidebarOpen(true)}
+                        onClick={handleAddSidebarOpen}
                         icon={<LucidePlus />}
                       />
                     </div>
@@ -388,8 +409,8 @@ export default function OperatorPage() {
                     points={points}
                     selectedPointId={selectedPointId}
                     onPointSelect={handlePointSelect}
-                    onPointEdit={handlePointEdit}
-                    onPointDelete={handlePointDelete}
+                    onPointEdit={handleEditSidebarOpen}
+                    onPointDelete={handleDeleteDialogOpen}
                     isLoading={isLoadingPoints}
                     error={pointsError}
                   />
