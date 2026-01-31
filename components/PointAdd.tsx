@@ -5,8 +5,8 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import type { PointAddProps } from "@/types/components.point_add.types";
 import type { FukutomiMapRef } from "@/types/components.map.types";
-import { RECOMMENDED_TAGS } from "@/data/data";
 import Button from "./Button";
+import TagInput from "./TagInput";
 
 export default function PointAdd({
   onSubmit,
@@ -42,8 +42,6 @@ export default function PointAdd({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   const mapRef = useRef<FukutomiMapRef | null>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const tagifyRef = useRef<any>(null);
   const [mapKey, setMapKey] = useState(0);
 
   // Initialize form data when editing
@@ -69,111 +67,6 @@ export default function PointAdd({
       setMarkerPosition(null);
     }
   }, [isOpen, isEditMode, editPoint]);
-
-  // Initialize tagify when sidebar opens and tags input is available
-  useEffect(() => {
-    if (!isOpen || typeof window === "undefined") return;
-
-    // Use a small delay to ensure DOM is ready
-    const initTimer = setTimeout(async () => {
-      try {
-        const tagInput = document.getElementById(
-          ElementIDs.tags,
-        ) as HTMLInputElement;
-
-        if (!tagInput) return;
-
-        // Destroy existing tagify instance
-        if (tagifyRef.current) {
-          try {
-            tagifyRef.current.destroy();
-          } catch {
-            // Ignore errors during cleanup
-          }
-          tagifyRef.current = null;
-        }
-
-        // Dynamic import of Tagify
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const TagifyModule = await import("@yaireo/tagify");
-        const TagifyClass = TagifyModule.default;
-
-        // Create new instance
-        const tagify = new TagifyClass({
-          whitelist: RECOMMENDED_TAGS,
-          dropdown: {
-            maxItems: 20,
-            classname: "tags-look",
-            enabled: 0,
-            closeOnSelect: false,
-          },
-          maxTags: 10,
-          editTags: true,
-          dblClickDelete: true,
-        });
-
-        // Attach to input
-        tagify.attach(tagInput);
-
-        // Initialize with existing tags
-        if (formData.tags && formData.tags.length > 0) {
-          tagify.removeAllTags();
-          tagify.addTags(formData.tags);
-        }
-
-        // Store reference
-        tagifyRef.current = tagify;
-
-        // Remove any existing change event listeners first
-        tagInput.removeEventListener("change", handleTagChange);
-
-        // Add change event listener
-        tagInput.addEventListener("change", handleTagChange);
-      } catch (error) {
-        console.error("Error initializing Tagify:", error);
-      }
-    }, 100);
-
-    return () => {
-      clearTimeout(initTimer);
-    };
-  }, [isOpen, ElementIDs.tags]);
-
-  // Handle tag change event
-  const handleTagChange = (e: Event) => {
-    const target = e.target as HTMLInputElement;
-    try {
-      const tags = JSON.parse(target.value || "[]") as Array<{
-        value: string;
-      }>;
-      setFormData((prev) => ({
-        ...prev,
-        tags: tags.map((tag) => tag.value),
-      }));
-    } catch {
-      // Handle JSON parse error silently
-    }
-  };
-
-  // Cleanup tagify on unmount or when sidebar closes
-  useEffect(() => {
-    return () => {
-      if (tagifyRef.current) {
-        try {
-          const tagInput = document.getElementById(
-            ElementIDs.tags,
-          ) as HTMLInputElement;
-          if (tagInput) {
-            tagInput.removeEventListener("change", handleTagChange);
-          }
-          tagifyRef.current.destroy();
-        } catch {
-          // Ignore errors during cleanup
-        }
-        tagifyRef.current = null;
-      }
-    };
-  }, [ElementIDs.tags]);
 
   // Initialize map when sidebar opens
   useEffect(() => {
@@ -340,6 +233,13 @@ export default function PointAdd({
     setFormData((prev) => ({
       ...prev,
       [name]: value,
+    }));
+  };
+
+  const handleTagsChange = (tags: string[]) => {
+    setFormData((prev) => ({
+      ...prev,
+      tags,
     }));
   };
 
@@ -529,16 +429,13 @@ export default function PointAdd({
           <label className={Styles.label} htmlFor={ElementIDs.tags}>
             タグ
           </label>
-          <input
-            id={ElementIDs.tags}
-            type="text"
-            placeholder="推奨タグから選択または自由に入力（複数選択可能）"
-            className={`${Styles.input} tagify`}
+          <TagInput
+            value={formData.tags}
+            onChange={handleTagsChange}
+            placeholder="タグを入力してください（スペース、カンマ、またはエンターで区切ります）"
+            maxTags={10}
             disabled={isSubmitting}
           />
-          <p className="text-xs text-gray-500 mt-1">
-            推奨: {RECOMMENDED_TAGS.join("、")}
-          </p>
         </div>
 
         {/* Buttons */}
