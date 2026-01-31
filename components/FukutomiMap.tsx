@@ -8,6 +8,7 @@ import type {
 } from "@/types/components.map.types";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { LucideTags } from "lucide-react";
 import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
 import {
   GeoJSON,
@@ -116,15 +117,29 @@ function MapController({
   return null;
 }
 
-// Get type label for popup
-function getTypeLabel(type: string): string {
-  switch (type) {
+// Get ability label for popup
+function getAbilityLabel(ability: string): string {
+  switch (ability) {
     case "get_on_off":
-      return "乗降可";
+      return "乗下車可";
     case "get_on":
       return "乗車のみ";
     case "get_off":
-      return "降車のみ";
+      return "下車のみ";
+    default:
+      return ability;
+  }
+}
+
+// Get type label for popup
+function getTypeLabel(type: string): string {
+  switch (type) {
+    case "departure":
+      return "出発地";
+    case "arrival":
+      return "到着地";
+    case "traveling":
+      return "経由地";
     default:
       return type;
   }
@@ -229,14 +244,21 @@ const FukutomiMap = forwardRef<FukutomiMapRef, FukutomiMapProps>(
                 <div className="min-w-[200px]">
                   <h3 className="font-bold text-base mb-1">{point.name}</h3>
                   <p className="text-sm text-gray-600 mb-2">{point.address}</p>
-                  <div className="flex items-center gap-2 text-xs">
+                  <div className="flex items-center gap-2 text-xs mb-2">
                     <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 font-medium">
+                      {getAbilityLabel(point.ability)}
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full bg-green-100 text-green-800 font-medium">
                       {getTypeLabel(point.type)}
                     </span>
                   </div>
                   <div className="mt-2 text-xs text-gray-500">
-                    <div>緯度: {point.latitude.toFixed(6)}</div>
-                    <div>経度: {point.longitude.toFixed(6)}</div>
+                    <div className="flex items-center gap-1">
+                      <span className="inline bg-purple-100 p-1 rounded-md text-purple-800">
+                        <LucideTags size={16} />
+                      </span>
+                      {point.tags.join(", ")}
+                    </div>
                   </div>
                 </div>
               </Popup>
