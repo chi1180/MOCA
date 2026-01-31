@@ -252,14 +252,16 @@ const FukutomiMap = forwardRef<FukutomiMapRef, FukutomiMapProps>(
                       {getTypeLabel(point.type)}
                     </span>
                   </div>
-                  <div className="mt-2 text-xs text-gray-500">
-                    <div className="flex items-center gap-1">
-                      <span className="inline bg-purple-100 p-1 rounded-md text-purple-800">
-                        <LucideTags size={16} />
-                      </span>
-                      {point.tags.join(", ")}
+                  {point.tags.length > 0 && (
+                    <div className="mt-2 text-xs text-gray-500">
+                      <div className="flex items-center gap-1">
+                        <span className="inline bg-purple-100 p-1 rounded-md text-purple-800">
+                          <LucideTags size={16} />
+                        </span>
+                        {point.tags.join(", ")}
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               </Popup>
             </Marker>
