@@ -43,6 +43,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         console.warn("Failed to enrich route with OSRM:", error);
         return successResponse(route);
       }
+    } else {
+      console.log("Development state validation failed !");
     }
 
     const { data, error } = await supabase
