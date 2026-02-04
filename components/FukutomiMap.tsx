@@ -2,6 +2,7 @@
 
 import { MAP_DATA } from "@/data/data";
 import type { PointWithId } from "@/types/api.points.types";
+import type { Route } from "@/types/api.routes.types";
 import type {
   FukutomiMapProps,
   FukutomiMapRef,
@@ -15,6 +16,7 @@ import {
   MapContainer,
   Marker,
   Popup,
+  Polyline,
   TileLayer,
   useMap,
   useMapEvents,
@@ -72,10 +74,12 @@ function MapController({
   mapInstanceRef,
   selectedPointId,
   points,
+  selectedRoute,
 }: {
   mapInstanceRef: React.MutableRefObject<L.Map | null>;
   selectedPointId?: string | null;
   points?: PointWithId[];
+  selectedRoute?: Route | null;
 }) {
   const map = useMap();
 
@@ -114,7 +118,48 @@ function MapController({
     }
   }, [selectedPointId, points, map]);
 
+  // Fit bounds to route when it's selected
+  useEffect(() => {
+    if (selectedRoute && selectedRoute.route_data.osrm_geometry) {
+      const coordinates = selectedRoute.route_data.osrm_geometry.coordinates;
+      if (coordinates.length > 0) {
+        const bounds = L.latLngBounds(
+          coordinates.map((coord) => [coord[1], coord[0]]), // OSRM returns [lon, lat], convert to [lat, lon]
+        );
+        map.fitBounds(bounds, { padding: [50, 50], duration: 0.5 });
+      }
+    }
+  }, [selectedRoute, map]);
+
   return null;
+}
+
+// Route rendering component
+function RoutePolyline({ selectedRoute }: { selectedRoute?: Route | null }) {
+  if (!selectedRoute || !selectedRoute.route_data.osrm_geometry) {
+    return null;
+  }
+
+  const coordinates = selectedRoute.route_data.osrm_geometry.coordinates.map(
+    (coord) => [coord[1], coord[0]], // Convert [lon, lat] to [lat, lon]
+  );
+
+  if (coordinates.length === 0) {
+    return null;
+  }
+
+  return (
+    <Polyline
+      positions={coordinates as [number, number][]}
+      pathOptions={{
+        color: "#FF6B35",
+        weight: 4,
+        opacity: 0.8,
+        lineCap: "round",
+        lineJoin: "round",
+      }}
+    />
+  );
 }
 
 // Get ability label for popup
@@ -219,6 +264,9 @@ const FukutomiMap = forwardRef<FukutomiMapRef, FukutomiMapProps>(
           </Marker>
         )}
 
+        {/* Route polyline */}
+        <RoutePolyline selectedRoute={selectedRoute} />
+
         {/* Multiple point markers */}
         {points.map((point) => {
           const isSelected = selectedPointId === point.id;
@@ -274,6 +322,7 @@ const FukutomiMap = forwardRef<FukutomiMapRef, FukutomiMapProps>(
           mapInstanceRef={mapInstanceRef}
           selectedPointId={selectedPointId}
           points={points}
+          selectedRoute={selectedRoute}
         />
       </MapContainer>
     );

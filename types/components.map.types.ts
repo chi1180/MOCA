@@ -1,4 +1,5 @@
 import type { PointWithId } from "./api.points.types";
+import type { Route } from "./api.routes.types";
 
 // Ref interface for FukutomiMap component
 export interface FukutomiMapRef {
@@ -16,4 +17,6 @@ export interface FukutomiMapProps {
   points?: PointWithId[];
   selectedPointId?: string | null;
   onPointClick?: (point: PointWithId) => void;
+  // Props for route rendering
+  selectedRoute?: Route | null;
 }

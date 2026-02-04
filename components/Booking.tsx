@@ -5,14 +5,17 @@ import Card from "./Card";
 import RouteList from "./RouteList";
 import dynamic from "next/dynamic";
 import { LucideMap } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 import type { Route } from "@/types/api.routes.types";
+import type { FukutomiMapRef } from "@/types/components.map.types";
 
 export default function Booking() {
   const [routes, setRoutes] = useState<Route[]>([]);
   const [selectedRouteId, setSelectedRouteId] = useState<string | null>(null);
+  const [selectedRoute, setSelectedRoute] = useState<Route | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const mapRef = useRef<FukutomiMapRef>(null);
 
   const FukutomiMap = useMemo(
     () =>
@@ -51,6 +54,7 @@ export default function Booking() {
           // 最初のルートを自動選択
           if (data.data.length > 0) {
             setSelectedRouteId(data.data[0].id);
+            setSelectedRoute(data.data[0]);
           }
         } else {
           setRoutes([]);
@@ -70,6 +74,7 @@ export default function Booking() {
 
   const handleRouteSelect = (route: Route) => {
     setSelectedRouteId(route.id);
+    setSelectedRoute(route);
   };
 
   return (
@@ -80,7 +85,7 @@ export default function Booking() {
           description="ボタンを押して、地図上でポイントを選択できます"
           icon={<LucideMap />}
         >
-          <FukutomiMap />
+          <FukutomiMap ref={mapRef} selectedRoute={selectedRoute} />
         </Card>
       </div>
 
