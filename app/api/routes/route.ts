@@ -8,7 +8,7 @@ import {
   parseQueryParams,
 } from "@/lib/api-helpers";
 import { routeCreateSchema, type RouteStatus } from "@/types/api.types";
-import { dummyRoutes } from "@/types/api.routes.types";
+import { dummyRoutes } from "@/data/dummy_data";
 
 // GET /api/routes - Get all routes
 export async function GET(request: NextRequest) {

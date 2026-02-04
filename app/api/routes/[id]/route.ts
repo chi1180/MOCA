@@ -8,7 +8,8 @@ import {
   isValidUUID,
 } from "@/lib/api-helpers";
 import { routeUpdateSchema } from "@/types/api.types";
-import { dummyRoutes, type Route } from "@/types/api.routes.types";
+import type { Route } from "@/types/api.routes.types";
+import { dummyRoutes } from "@/data/dummy_data";
 import { getOrGenerateRouteData } from "@/lib/osrm";
 
 interface RouteParams {
@@ -25,14 +26,15 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     // productionでない場合はダミーデータから検索
-    if (process.env.NODE_ENV !== "production") {
+    if (process.env.NODE_ENV === "development") {
       const route = dummyRoutes.find((r) => r.id === id);
+      console.dir(route, { depth: null });
 
       if (!route) {
         return errorResponse("Route not found", 404);
       }
 
-      // ルートデータにOSRM情報を追加
+      // 指定されたIDのルートだけを拡張
       try {
         const enrichedRoute = await enrichRouteDataWithOSRM(route);
         return successResponse(enrichedRoute);
@@ -61,7 +63,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return handleSupabaseError(error);
     }
 
-    // 本番環境でもOSRM情報を追加
+    // 本番環境でも指定されたIDのルートだけを拡張
     try {
       const enrichedData = await enrichRouteDataWithOSRM(data);
       return successResponse(enrichedData);
@@ -173,6 +175,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
 /**
  * ルートデータにOSRM情報を追加する
+ * 指定されたルートのみを拡張する
  *
  * @param route - ルートデータ
  * @returns OSRM情報が追加されたルート
