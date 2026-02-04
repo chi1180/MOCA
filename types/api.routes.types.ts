@@ -57,17 +57,40 @@ interface OSRMRouteGeometry {
   coordinates: [number, number][]; // [longitude, latitude]の配列
 }
 
+interface OSRMIntersection {
+  out?: number;
+  in?: number;
+  entry: boolean[];
+  bearings: number[];
+  location: [number, number];
+}
+
+interface OSRMManeuver {
+  bearing_after: number;
+  bearing_before: number;
+  location: [number, number];
+  type: string;
+  modifier?: string;
+}
+
 interface OSRMStep {
   distance: number;
   duration: number;
+  weight?: number;
   geometry: OSRMRouteGeometry;
   name: string; // 道路名
+  ref?: string;
   mode: string; // "driving"など
+  maneuver?: OSRMManeuver;
+  intersections?: OSRMIntersection[];
+  driving_side?: string;
 }
 
 interface OSRMLeg {
   distance: number; // メートル
   duration: number; // 秒
+  weight?: number;
+  summary?: string;
   steps: OSRMStep[];
 }
 
@@ -113,4 +136,6 @@ export type {
   OSRMRouteGeometry,
   OSRMLeg,
   OSRMStep,
+  OSRMIntersection,
+  OSRMManeuver,
 };
