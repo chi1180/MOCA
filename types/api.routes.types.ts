@@ -1,5 +1,5 @@
 // =============================================
-// 運行データ型定義
+// 運行データ型定義（OSRM対応版）
 // =============================================
 
 /**
@@ -48,12 +48,41 @@ interface RouteStop {
 }
 
 /**
+ * OSRM APIのレスポンスから抽出するルート形状データ
+ * geometry: ルート全体の経路（GeoJSON LineString形式）
+ * legs: 各区間の詳細情報
+ */
+interface OSRMRouteGeometry {
+  type: "LineString";
+  coordinates: [number, number][]; // [longitude, latitude]の配列
+}
+
+interface OSRMStep {
+  distance: number;
+  duration: number;
+  geometry: OSRMRouteGeometry;
+  name: string; // 道路名
+  mode: string; // "driving"など
+}
+
+interface OSRMLeg {
+  distance: number; // メートル
+  duration: number; // 秒
+  steps: OSRMStep[];
+}
+
+/**
  * ルートデータ（routesテーブルのroute_data JSONB）
+ * OSRM APIから取得した詳細な経路情報を含む
  */
 interface RouteData {
   stops: RouteStop[];
   total_distance_km: number;
   estimated_duration_minutes: number;
+
+  // OSRM APIから取得したルート形状データ
+  osrm_geometry?: OSRMRouteGeometry; // ルート全体の経路座標（オプション）
+  osrm_legs?: OSRMLeg[]; // 各停留所間の詳細情報（オプション）
 }
 
 /**
@@ -80,7 +109,7 @@ interface Route {
 const route1: Route = {
   id: "550e8400-e29b-41d4-a716-446655440001",
   vehicle_id: "町バス001",
-  route_date: "2026-02-05",
+  route_date: "2026-02-04",
   route_data: {
     stops: [
       {
@@ -107,7 +136,8 @@ const route1: Route = {
       },
       {
         order: 3,
-        stop_id: "36834a25-5c63-42ba-97d9-ba43f9c6887c",
+        stop_id: "36834a25-5c63-42ba-97d9-ba43f9c
+6887c",
         stop_name: "道の駅前",
         latitude: 34.53301419,
         longitude: 132.77500033,
@@ -130,6 +160,61 @@ const route1: Route = {
     ],
     total_distance_km: 5.8,
     estimated_duration_minutes: 23,
+    osrm_geometry: {
+      type: "LineString",
+      coordinates: [
+        [132.7775538, 34.53651413], // 福富支所前
+        [132.7765, 34.536], // 中間点1
+        [132.775, 34.535], // 中間点2
+        [132.768, 34.5345], // 中間点3
+        [132.76, 34.534], // 中間点4
+        [132.75321007, 34.53406595], // 下之谷
+        [132.755, 34.5338], // 中間点5
+        [132.762, 34.5335], // 中間点6
+        [132.77, 34.5332], // 中間点7
+        [132.77500033, 34.53301419], // 道の駅前
+      ],
+    },
+    osrm_legs: [
+      {
+        distance: 2850.5,
+        duration: 420,
+        steps: [
+          {
+            distance: 2850.5,
+            duration: 420,
+            geometry: {
+              type: "LineString",
+              coordinates: [
+                [132.7775538, 34.53651413],
+                [132.75321007, 34.53406595],
+              ],
+            },
+            name: "県道82号線",
+            mode: "driving",
+          },
+        ],
+      },
+      {
+        distance: 2950.3,
+        duration: 360,
+        steps: [
+          {
+            distance: 2950.3,
+            duration: 360,
+            geometry: {
+              type: "LineString",
+              coordinates: [
+                [132.75321007, 34.53406595],
+                [132.77500033, 34.53301419],
+              ],
+            },
+            name: "国道375号線",
+            mode: "driving",
+          },
+        ],
+      },
+    ],
   },
   status: "in_progress",
   created_at: "2026-02-05T07:30:00+09:00",
@@ -143,7 +228,7 @@ const route1: Route = {
 const route2: Route = {
   id: "550e8400-e29b-41d4-a716-446655440002",
   vehicle_id: "町バス002",
-  route_date: "2026-02-05",
+  route_date: "2026-02-04",
   route_data: {
     stops: [
       {
@@ -182,6 +267,7 @@ const route2: Route = {
       {
         order: 4,
         stop_id: "36834a25-5c63-42ba-97d9-ba43f9c6887c",
+
         stop_name: "道の駅前",
         latitude: 34.53301419,
         longitude: 132.77500033,
@@ -206,7 +292,7 @@ const route2: Route = {
 const route3: Route = {
   id: "550e8400-e29b-41d4-a716-446655440003",
   vehicle_id: "町タクシー001",
-  route_date: "2026-02-05",
+  route_date: "2026-02-04",
   route_data: {
     stops: [
       {
@@ -244,7 +330,8 @@ const route3: Route = {
       },
       {
         order: 4,
-        stop_id: "41f9ac43-2a5f-4a17-92be-6cf3467a154f",
+        stop_id: "41f9ac43-2a5f-4a17-92be-6cf3467
+a154f",
         stop_name: "別府河内線",
         latitude: 34.53669973,
         longitude: 132.80417204,
@@ -274,6 +361,9 @@ export type {
   RouteStop,
   RouteData,
   Route,
+  OSRMRouteGeometry,
+  OSRMLeg,
+  OSRMStep,
 };
 
 export const dummyRoutes = [route1, route2, route3];

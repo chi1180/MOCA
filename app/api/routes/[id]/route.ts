@@ -9,6 +9,7 @@ import {
 } from "@/lib/api-helpers";
 import { routeUpdateSchema } from "@/types/api.types";
 import { dummyRoutes, type Route } from "@/types/api.routes.types";
+import { getOrGenerateRouteData } from "@/lib/osrm";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -31,7 +32,15 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         return errorResponse("Route not found", 404);
       }
 
-      return successResponse(route);
+      // ルートデータにOSRM情報を追加
+      try {
+        const enrichedRoute = await enrichRouteDataWithOSRM(route);
+        return successResponse(enrichedRoute);
+      } catch (error) {
+        // OSRM処理に失敗してもルートデータ自体は返す
+        console.warn("Failed to enrich route with OSRM:", error);
+        return successResponse(route);
+      }
     }
 
     const { data, error } = await supabase
@@ -52,7 +61,14 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return handleSupabaseError(error);
     }
 
-    return successResponse(data);
+    // 本番環境でもOSRM情報を追加
+    try {
+      const enrichedData = await enrichRouteDataWithOSRM(data);
+      return successResponse(enrichedData);
+    } catch (error) {
+      console.warn("Failed to enrich route with OSRM:", error);
+      return successResponse(data);
+    }
   } catch (error) {
     console.error("Error fetching route:", error);
     return errorResponse("Internal server error", 500);
@@ -152,5 +168,47 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
   } catch (error) {
     console.error("Error deleting route:", error);
     return errorResponse("Internal server error", 500);
+  }
+}
+
+/**
+ * ルートデータにOSRM情報を追加する
+ *
+ * @param route - ルートデータ
+ * @returns OSRM情報が追加されたルート
+ */
+async function enrichRouteDataWithOSRM(route: Route): Promise<Route> {
+  // 既にOSRM情報がある場合はそのまま返す
+  if (route.route_data.osrm_geometry && route.route_data.osrm_legs) {
+    return route;
+  }
+
+  const stops = route.route_data.stops.map((stop) => ({
+    stop_id: stop.stop_id,
+    stop_name: stop.stop_name,
+    latitude: stop.latitude,
+    longitude: stop.longitude,
+    type: stop.type,
+    reservation_id: stop.reservation_id,
+  }));
+
+  if (stops.length === 0) {
+    return route;
+  }
+
+  // 最初の停留所の到着時刻をベースに計算
+  const startTime = new Date(route.route_data.stops[0].scheduled_arrival);
+
+  try {
+    const enrichedRouteData = await getOrGenerateRouteData(stops, startTime);
+
+    return {
+      ...route,
+      route_data: enrichedRouteData,
+    };
+  } catch (error) {
+    console.warn("Failed to enrich route data with OSRM:", error);
+    // 失敗してもルートは返す
+    return route;
   }
 }
