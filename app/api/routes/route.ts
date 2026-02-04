@@ -8,10 +8,44 @@ import {
   parseQueryParams,
 } from "@/lib/api-helpers";
 import { routeCreateSchema, type RouteStatus } from "@/types/api.types";
+import { dummyRoutes } from "@/types/api.routes.types";
 
 // GET /api/routes - Get all routes
 export async function GET(request: NextRequest) {
   try {
+    // production環境でない場合はダミーデータを返す
+    if (process.env.NODE_ENV !== "production") {
+      const params = parseQueryParams(request);
+      const status = params.get("status");
+      const vehicleId = params.get("vehicle_id");
+      const date = params.get("date");
+
+      let filteredRoutes = [...dummyRoutes];
+
+      // Filter by status if provided
+      if (status) {
+        filteredRoutes = filteredRoutes.filter(
+          (route) => route.status === status,
+        );
+      }
+
+      // Filter by vehicle if provided
+      if (vehicleId) {
+        filteredRoutes = filteredRoutes.filter(
+          (route) => route.vehicle_id === vehicleId,
+        );
+      }
+
+      // Filter by date if provided
+      if (date) {
+        filteredRoutes = filteredRoutes.filter(
+          (route) => route.route_date === date,
+        );
+      }
+
+      return successResponse(filteredRoutes);
+    }
+
     const params = parseQueryParams(request);
     const status = params.get("status");
     const vehicleId = params.get("vehicle_id");

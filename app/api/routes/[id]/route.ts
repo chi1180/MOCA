@@ -8,6 +8,7 @@ import {
   isValidUUID,
 } from "@/lib/api-helpers";
 import { routeUpdateSchema } from "@/types/api.types";
+import { dummyRoutes, type Route } from "@/types/api.routes.types";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -22,13 +23,24 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return errorResponse("Invalid route ID format", 400);
     }
 
+    // productionでない場合はダミーデータから検索
+    if (process.env.NODE_ENV !== "production") {
+      const route = dummyRoutes.find((r) => r.id === id);
+
+      if (!route) {
+        return errorResponse("Route not found", 404);
+      }
+
+      return successResponse(route);
+    }
+
     const { data, error } = await supabase
       .from("routes")
       .select(
         `
         *,
         vehicle:vehicles(*)
-      `
+      `,
       )
       .eq("id", id)
       .single();
@@ -62,6 +74,23 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       return validation.error;
     }
 
+    // productionでない場合はダミーデータを更新して返す
+    if (process.env.NODE_ENV !== "production") {
+      const routeIndex = dummyRoutes.findIndex((r) => r.id === id);
+
+      if (routeIndex === -1) {
+        return errorResponse("Route not found", 404);
+      }
+
+      const updatedRoute: Route = {
+        ...dummyRoutes[routeIndex],
+        ...validation.data,
+        updated_at: new Date().toISOString(),
+      };
+
+      return successResponse(updatedRoute, "Route updated successfully");
+    }
+
     const updateData = {
       ...validation.data,
       updated_at: new Date().toISOString(),
@@ -75,7 +104,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         `
         *,
         vehicle:vehicles(*)
-      `
+      `,
       )
       .single();
 
@@ -100,6 +129,17 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
     if (!isValidUUID(id)) {
       return errorResponse("Invalid route ID format", 400);
+    }
+
+    // productionでない場合はダミーデータを削除して成功を返す
+    if (process.env.NODE_ENV !== "production") {
+      const routeIndex = dummyRoutes.findIndex((r) => r.id === id);
+
+      if (routeIndex === -1) {
+        return errorResponse("Route not found", 404);
+      }
+
+      return successResponse(null, "Route deleted successfully");
     }
 
     const { error } = await supabase.from("routes").delete().eq("id", id);
