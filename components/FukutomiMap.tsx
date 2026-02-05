@@ -10,7 +10,13 @@ import type {
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { LucideTags } from "lucide-react";
-import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
+import {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useCallback,
+} from "react";
 import {
   GeoJSON,
   MapContainer,
@@ -75,11 +81,13 @@ function MapController({
   selectedPointId,
   points,
   selectedRoute,
+  stopMarkerRefs,
 }: {
   mapInstanceRef: React.MutableRefObject<L.Map | null>;
   selectedPointId?: string | null;
   points?: PointWithId[];
   selectedRoute?: Route | null;
+  stopMarkerRefs?: React.MutableRefObject<Map<string, L.Marker>>;
 }) {
   const map = useMap();
 
@@ -163,7 +171,13 @@ function RoutePolyline({ selectedRoute }: { selectedRoute?: Route | null }) {
 }
 
 // Route stops rendering component
-function RouteStops({ selectedRoute }: { selectedRoute?: Route | null }) {
+function RouteStops({
+  selectedRoute,
+  stopMarkerRefs,
+}: {
+  selectedRoute?: Route | null;
+  stopMarkerRefs?: React.MutableRefObject<Map<string, L.Marker>>;
+}) {
   if (!selectedRoute || !selectedRoute.route_data.stops) {
     return null;
   }
@@ -209,6 +223,11 @@ function RouteStops({ selectedRoute }: { selectedRoute?: Route | null }) {
           key={`${stop.stop_id}-${index}`}
           position={[stop.latitude, stop.longitude]}
           icon={getStopIcon(stop.type)}
+          ref={(markerRef) => {
+            if (markerRef && stopMarkerRefs) {
+              stopMarkerRefs.current.set(stop.stop_id, markerRef);
+            }
+          }}
         >
           <Popup>
             <div className="min-w-[250px]">
@@ -303,6 +322,7 @@ const FukutomiMap = forwardRef<FukutomiMapRef, FukutomiMapProps>(
   ) {
     const mapInstanceRef = useRef<L.Map | null>(null);
     const markerRefs = useRef<Map<string, L.Marker>>(new Map());
+    const stopMarkerRefs = useRef<Map<string, L.Marker>>(new Map());
 
     // Expose methods to parent component
     useImperativeHandle(ref, () => ({
@@ -313,6 +333,12 @@ const FukutomiMap = forwardRef<FukutomiMapRef, FukutomiMapProps>(
       },
       openPopupForPoint: (pointId: string) => {
         const marker = markerRefs.current.get(pointId);
+        if (marker) {
+          marker.openPopup();
+        }
+      },
+      openPopupForStop: (stopId: string) => {
+        const marker = stopMarkerRefs.current.get(stopId);
         if (marker) {
           marker.openPopup();
         }
@@ -367,7 +393,10 @@ const FukutomiMap = forwardRef<FukutomiMapRef, FukutomiMapProps>(
         <RoutePolyline selectedRoute={selectedRoute} />
 
         {/* Route stops markers */}
-        <RouteStops selectedRoute={selectedRoute} />
+        <RouteStops
+          selectedRoute={selectedRoute}
+          stopMarkerRefs={stopMarkerRefs}
+        />
 
         {/* Multiple point markers */}
         {points.map((point) => {
@@ -425,6 +454,7 @@ const FukutomiMap = forwardRef<FukutomiMapRef, FukutomiMapProps>(
           selectedPointId={selectedPointId}
           points={points}
           selectedRoute={selectedRoute}
+          stopMarkerRefs={stopMarkerRefs}
         />
       </MapContainer>
     );

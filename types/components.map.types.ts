@@ -5,6 +5,7 @@ import type { Route } from "./api.routes.types";
 export interface FukutomiMapRef {
   flyToPoint: (lat: number, lng: number, zoom?: number) => void;
   openPopupForPoint: (pointId: string) => void;
+  openPopupForStop: (stopId: string) => void;
   invalidateSize: () => void;
 }
 
