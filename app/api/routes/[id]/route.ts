@@ -9,7 +9,6 @@ import {
 } from "@/lib/api-helpers";
 import { routeUpdateSchema } from "@/types/api.types";
 import type { Route } from "@/types/api.routes.types";
-import { dummyRoutes } from "@/data/dummy_data";
 import { getOrGenerateRouteData } from "@/lib/osrm";
 
 interface RouteParams {
@@ -17,34 +16,12 @@ interface RouteParams {
 }
 
 // GET /api/routes/[id] - Get a single route by ID
-export async function GET(request: NextRequest, { params }: RouteParams) {
+export async function GET(_request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params;
 
     if (!isValidUUID(id)) {
       return errorResponse("Invalid route ID format", 400);
-    }
-
-    // productionでない場合はダミーデータから検索
-    if (process.env.NODE_ENV === "development") {
-      const route = dummyRoutes.find((r) => r.id === id);
-      console.dir(route, { depth: null });
-
-      if (!route) {
-        return errorResponse("Route not found", 404);
-      }
-
-      // 指定されたIDのルートだけを拡張
-      try {
-        const enrichedRoute = await enrichRouteDataWithOSRM(route);
-        return successResponse(enrichedRoute);
-      } catch (error) {
-        // OSRM処理に失敗してもルートデータ自体は返す
-        console.warn("Failed to enrich route with OSRM:", error);
-        return successResponse(route);
-      }
-    } else {
-      console.log("Development state validation failed !");
     }
 
     const { data, error } = await supabase
@@ -67,7 +44,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     // 本番環境でも指定されたIDのルートだけを拡張
     try {
-      const enrichedData = await enrichRouteDataWithOSRM(data);
+      const enrichedData = await enrichRouteDataWithOSRM(
+        data as unknown as Route,
+      );
       return successResponse(enrichedData);
     } catch (error) {
       console.warn("Failed to enrich route with OSRM:", error);
@@ -92,23 +71,6 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
     if (!validation.success) {
       return validation.error;
-    }
-
-    // productionでない場合はダミーデータを更新して返す
-    if (process.env.NODE_ENV !== "production") {
-      const routeIndex = dummyRoutes.findIndex((r) => r.id === id);
-
-      if (routeIndex === -1) {
-        return errorResponse("Route not found", 404);
-      }
-
-      const updatedRoute: Route = {
-        ...dummyRoutes[routeIndex],
-        ...validation.data,
-        updated_at: new Date().toISOString(),
-      };
-
-      return successResponse(updatedRoute, "Route updated successfully");
     }
 
     const updateData = {
@@ -143,23 +105,12 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 }
 
 // DELETE /api/routes/[id] - Delete a route
-export async function DELETE(request: NextRequest, { params }: RouteParams) {
+export async function DELETE(_request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params;
 
     if (!isValidUUID(id)) {
       return errorResponse("Invalid route ID format", 400);
-    }
-
-    // productionでない場合はダミーデータを削除して成功を返す
-    if (process.env.NODE_ENV !== "production") {
-      const routeIndex = dummyRoutes.findIndex((r) => r.id === id);
-
-      if (routeIndex === -1) {
-        return errorResponse("Route not found", 404);
-      }
-
-      return successResponse(null, "Route deleted successfully");
     }
 
     const { error } = await supabase.from("routes").delete().eq("id", id);
