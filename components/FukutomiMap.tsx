@@ -199,6 +199,7 @@ const FukutomiMap = forwardRef<FukutomiMapRef, FukutomiMapProps>(
       points = [],
       selectedPointId,
       onPointClick,
+      selectedRoute,
     },
     ref,
   ) {
