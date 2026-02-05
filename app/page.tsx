@@ -24,10 +24,6 @@ export default function Home() {
           <Booking />
         </section>
       </main>
-
-      {
-        // TODO ::: [ ] Footer
-      }
     </div>
   );
 }

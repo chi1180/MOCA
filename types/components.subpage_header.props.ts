@@ -1,3 +1,3 @@
 export interface SubpageHeaderProps {
-  type: "operator" | "reservations";
+  type: "operator" | "reservations" | "routes";
 }

@@ -37,9 +37,15 @@ export default function SubpageHeader({ type }: SubpageHeaderProps) {
     Content.headerButton = (
       <Button label="新規予約" type="link" href="/" filled />
     );
+  } else if (type === "routes") {
+    Content.title = "ルート一覧画面";
+    Content.subtitle = "東広島市福富町 - ルートの一覧表示";
+    Content.headerButton = (
+      <Button label="新規予約" type="link" href="/" filled />
+    );
   } else {
     throw new Error(
-      "Invalid SubpageHeader props. Type prop must be 'operator' or 'reservations'.",
+      "Invalid SubpageHeader props. Type prop must be 'operator', 'reservations', or 'routes'.",
     );
   }
 
