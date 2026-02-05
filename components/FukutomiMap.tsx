@@ -162,6 +162,104 @@ function RoutePolyline({ selectedRoute }: { selectedRoute?: Route | null }) {
   );
 }
 
+// Route stops rendering component
+function RouteStops({ selectedRoute }: { selectedRoute?: Route | null }) {
+  if (!selectedRoute || !selectedRoute.route_data.stops) {
+    return null;
+  }
+
+  const stops = selectedRoute.route_data.stops;
+
+  if (stops.length === 0) {
+    return null;
+  }
+
+  // Create color icons for different stop types
+  const getStopIcon = (stopType: string) => {
+    const shadowUrl =
+      "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png";
+
+    // Different colors for pickup and dropoff
+    if (stopType === "pickup") {
+      return L.icon({
+        iconUrl:
+          "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png",
+        shadowUrl,
+        iconSize: [25, 41],
+        iconAnchor: [12, 41],
+        popupAnchor: [1, -34],
+      });
+    } else {
+      // dropoff
+      return L.icon({
+        iconUrl:
+          "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png",
+        shadowUrl,
+        iconSize: [25, 41],
+        iconAnchor: [12, 41],
+        popupAnchor: [1, -34],
+      });
+    }
+  };
+
+  return (
+    <>
+      {stops.map((stop, index) => (
+        <Marker
+          key={`${stop.stop_id}-${index}`}
+          position={[stop.latitude, stop.longitude]}
+          icon={getStopIcon(stop.type)}
+        >
+          <Popup>
+            <div className="min-w-[250px]">
+              <h3 className="font-bold text-base mb-1">{stop.stop_name}</h3>
+              <div className="flex items-center gap-2 text-xs mb-2">
+                <span
+                  className={`
+                    px-2 py-0.5 rounded-full font-medium
+                    ${
+                      stop.type === "pickup"
+                        ? "bg-green-100 text-green-800"
+                        : "bg-red-100 text-red-800"
+                    }
+                  `}
+                >
+                  {stop.type === "pickup" ? "乗車" : "下車"}
+                </span>
+                <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 font-medium">
+                  停車順: {stop.order}
+                </span>
+              </div>
+              <div className="text-xs text-gray-600 space-y-1">
+                <p>
+                  <span className="font-semibold">到着予定:</span>{" "}
+                  {new Date(stop.scheduled_arrival).toLocaleTimeString(
+                    "ja-JP",
+                    {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    },
+                  )}
+                </p>
+                <p>
+                  <span className="font-semibold">出発予定:</span>{" "}
+                  {new Date(stop.scheduled_departure).toLocaleTimeString(
+                    "ja-JP",
+                    {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    },
+                  )}
+                </p>
+              </div>
+            </div>
+          </Popup>
+        </Marker>
+      ))}
+    </>
+  );
+}
+
 // Get ability label for popup
 function getAbilityLabel(ability: string): string {
   switch (ability) {
@@ -267,6 +365,9 @@ const FukutomiMap = forwardRef<FukutomiMapRef, FukutomiMapProps>(
 
         {/* Route polyline */}
         <RoutePolyline selectedRoute={selectedRoute} />
+
+        {/* Route stops markers */}
+        <RouteStops selectedRoute={selectedRoute} />
 
         {/* Multiple point markers */}
         {points.map((point) => {
